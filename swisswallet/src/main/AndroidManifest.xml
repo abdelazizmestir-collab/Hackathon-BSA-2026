@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- System fingerprint / screen-lock prompt before a payment (DeviceAuth). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <!-- Only apps signed with the same key (i.e. our Swissquote app) may ask us to provision a wallet. -->
     <permission
