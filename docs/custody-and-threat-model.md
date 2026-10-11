@@ -28,6 +28,7 @@ owners `[device key, SwissRecoveryModule]`.
 | Client, with the device key | Yes | Can cancel any recovery during the waiting period; can change the guardians |
 | Swissquote alone | No | No (1 signature of the 3 needed) |
 | Swissquote + one client guardian | No | No (2 of 3) |
+| Swissquote + the independent institution, if the client picked one | No | No: one of the client's own guardians is still needed |
 | Swissquote + two client guardians | No | Yes, after the waiting period, unless the client cancels |
 | The client's three guardians, without Swissquote | No | Yes, after the waiting period |
 | `SwissRecoveryModule` contract | No | Adds the new key and removes the lost one, only with 3 guardian signatures and after the delay. It has no function that moves funds. |

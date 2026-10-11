@@ -32,7 +32,7 @@ SwissWallet/                 ← Android Studio project (open this folder)
 │   │             · recovery/ (Guardians, Recover my wallet, Be a guardian)
 │   └── ProvisionActivity.kt  (invisible, called by Swissquote to generate the wallet)
 ├── contracts/               ← Solidity: SwissRecoveryModule + tests (local EVM) + end-to-end test
-└── docs/                    ← explanations in French (ERC-4337, social recovery)
+└── docs/                    ← submission, custody and threat model, how it works, legal, business, demo
 ```
 
 ## MVVM in one picture
@@ -168,11 +168,7 @@ Guardian names ("Institution", "My iPad") are only stored on the phone; on-chain
 The passkey isn't bound to biometrics in the demo (emulator); on a real phone you'd add
 `setUserAuthenticationRequired(true)`.
 
-## En bref (FR)
+## Documentation
 
-Le wallet est un coffre-fort (smart contract Coinbase Smart Wallet). Ta **passkey** (puce sécurisée du
-téléphone) l'ouvre au quotidien. Le **module de récupération** peut seulement ajouter une nouvelle passkey,
-et seulement si **3 de tes 4 garants** sont d'accord **et** après un **délai de sécurité** (30 s en démo,
-48 h en vrai) pendant lequel tu peux annuler. Garants : **Swissquote automatiquement** (il vérifie ton
-identité avant de signer), **ton autre appareil**, **tes proches**. Explication complète :
-**docs/Recuperation_sociale.md** (et **docs/ERC-4337_explication.md** pour l'abstraction de compte).
+Start with [docs/submission.md](docs/submission.md). The index of all documents is
+[docs/README.md](docs/README.md).

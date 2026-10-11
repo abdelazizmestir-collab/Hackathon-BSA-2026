@@ -42,9 +42,8 @@ Mocked parts are marked MOCK. The Swissquote app is a separate app with its own
 process and storage; the wallet app never holds Swissquote's key. The complete
 list is "What is simulated" in
 [custody-and-threat-model.md](custody-and-threat-model.md) and the table in the
-[README](../README.md). How ERC-4337 and the recovery work, in French:
-[ERC-4337_explication.md](ERC-4337_explication.md),
-[Recuperation_sociale.md](Recuperation_sociale.md).
+[README](../README.md). How ERC-4337, gas sponsorship and the recovery work:
+[how-it-works.md](how-it-works.md).
 
 ## 3. Custody and the Travel Rule
 
@@ -142,7 +141,7 @@ exercised are the same with guardians on separate devices.
 |---|---|
 | Contract tests and end-to-end test with the real Coinbase Smart Wallet | `contracts/` (`npm test`, `npm run e2e`) |
 | Kotlin encoding tests | `./gradlew :swisswallet:testDebugUnitTest` |
-| Demo story and pitch notes | [demo-script.md](demo-script.md), [pitch-notes.md](pitch-notes.md) |
+| Demo story and pitch notes | [demo-script.md](demo-script.md) |
 | Judge questions | [judge-qa.md](judge-qa.md) |
 | Earlier web prototype (passkeys, relay, separate guardian services, independent recovery page, sanctions screening, simulation) | Repository `rayenea/swissquote-wallet`, live at https://sq-wallet-hackathon-demo.vercel.app |
 

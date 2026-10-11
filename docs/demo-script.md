@@ -1,4 +1,4 @@
-# Demo script (target: 3 minutes)
+# Demo and pitch (target: 3 minutes)
 
 Rehearse it twice and record one full run as the backup video.
 
@@ -42,12 +42,41 @@ for a key holder.
    server involved.
 9. **Close (15 s).** What is real, what is simulated, what Swissquote gains.
 
+## Slides
+
+- **Who can do what:** use the table in
+  [custody-and-threat-model.md](custody-and-threat-model.md). One line under
+  it: *Swissquote has no partner. The client chooses the other three guardians,
+  possibly an independent institution, and Swissquote always needs at least one
+  of the client's own guardians.*
+- **Evidence:** the four transactions of a complete on-chain recovery and the
+  verified contract source, from [submission.md](submission.md), section 8.
+
+## One-minute summary
+
+Today a Swissquote client who wants to hold their own keys has to leave. With
+this wallet they generate it from inside the Swissquote app. The key lives in
+their phone's secure chip and is the only thing that can spend. Fees are paid
+for them. If they lose the phone, three of four guardians bring them back to
+the same wallet after a waiting period they can cancel: Swissquote is one
+guardian, and the other three are chosen by the client. Swissquote alone can do
+nothing, and if Swissquote disappears the client's own guardians are enough.
+
 ## Say it openly
 
-- Swissquote's identity check and its guardian key in the app are simulated;
-  in production the key is on a bank server.
-- Device authentication before signing and payment limits are in `main`: set a
-  screen lock on the demo phone, otherwise the system prompt is skipped.
+1. **Authentication.** "Every payment asks for the phone's fingerprint or PIN,
+   and large or first-time payments need a second confirmation. These are app
+   rules: the key is not yet bound to the fingerprint in hardware."
+2. **Simulated parts.** "Swissquote's identity check and its guardian key in
+   the app are simulated; in production the key is on a bank server. The
+   simulated guardians are a one-emulator shortcut, not part of the design."
+3. **Checks before signing.** "This app has a blocked-address list. Sanctions
+   screening against real lists and transaction simulation were built in our
+   earlier web prototype."
+
+If asked what is not finished: limits enforced by the wallet contract and a
+second signer for large amounts, the key bound to biometrics in hardware, an
+audit of the recovery contract, and Bitcoin.
 
 ## If something fails on stage
 
