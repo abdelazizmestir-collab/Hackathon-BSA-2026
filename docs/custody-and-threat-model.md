@@ -11,8 +11,8 @@ Applies to the Android apps in this repository (`swissquote` + `swisswallet`).
   and is not synced to any cloud account.
 - A lost key is replaced by **any 3 of 4 guardians**, after a waiting period
   the client can cancel. Guardians are **Swissquote** (added automatically)
-  and **three chosen by the client**: their other device and people close to
-  them.
+  and **three chosen by the client**: their other device, people close to
+  them, or an independent institution (e.g. a notary or a trust company, independent from both the client and Swissquote).
 
 We do not call this "legally non-custodial": a group that can install a new
 owner key is a form of control. What we claim is narrower and checkable
@@ -38,8 +38,11 @@ owners `[device key, SwissRecoveryModule]`.
 > the client?
 
 - **Alone: no.** One signature of three.
-- **With a partner institution: there is none.** The other three guardians
-  are chosen by the client. Every valid group contains at least two of them.
+- **With an institution: only one the client chose.** Swissquote has no
+  partner. The client may pick an independent institution as one of their three
+  guardians; Swissquote + that institution are still one signature short and
+  need one of the client's own guardians (person or device), the waiting
+  period, and no cancel from the client.
 - **With two of the client's own guardians: indirectly.** They cannot spend,
   but they can install a new key after the waiting period. The client's
   current key cancels the request at any time before then.

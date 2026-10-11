@@ -153,7 +153,9 @@ private fun Content(state: GuardiansUiState, vm: GuardiansViewModel, onGuardianM
         ExplainCard(SwissIcons.Phone, "Add one of your own devices",
             "On your tablet or old phone: install SwissWallet → “Be a guardian” → share the code. Paste it here with “My other device”.")
         ExplainCard(SwissIcons.Users, "Add a close one",
-            "Your mom, a friend… They open SwissWallet → “Be a guardian” and send you their code. They never see your money and can't move it.", SwissColors.Green)
+            "A friend or a relative… They open SwissWallet → “Be a guardian” and send you their code. They never see your money and can't move it.", SwissColors.Green)
+        ExplainCard(SwissIcons.Shield, "An independent institution",
+            "A neutral third party (e.g. a notary or a trust company), independent from you and from Swissquote. Swissquote and the institution together still need one of your own guardians.", SwissColors.TextSoft)
         ExplainCard(SwissIcons.Clock, "3 of 4 + a safety delay",
             "Losing 1 guardian isn't a problem, and 1 guardian alone can do nothing. After 3 approvals there's a 30 s wait (48 h in real life) during which you can cancel.", SwissColors.TextSoft)
     }
@@ -181,6 +183,7 @@ private fun AddGuardianPanel(state: GuardiansUiState, vm: GuardiansViewModel, on
                 AddMode.CHOOSE, null -> {
                     ChoiceRow(SwissIcons.Phone, SwissColors.Blue, "My other device", "Tablet, old phone… with SwissWallet") { vm.chooseMode(AddMode.MY_DEVICE) }
                     ChoiceRow(SwissIcons.Users, SwissColors.Green, "A close one", "Family or friend with SwissWallet") { vm.chooseMode(AddMode.CLOSE_ONE) }
+                    ChoiceRow(SwissIcons.Shield, SwissColors.TextSoft, "Independent institution (demo)", "Neutral third party, e.g. a notary. Simulated on this phone", vm::addInstitution)
                     ChoiceRow(SwissIcons.Zap, SwissColors.TextSecondary, "Simulated guardian (demo)", "Key kept on this phone to test with one emulator", vm::addDemoGuardian)
                 }
                 AddMode.MY_DEVICE, AddMode.CLOSE_ONE -> {
@@ -192,7 +195,7 @@ private fun AddGuardianPanel(state: GuardiansUiState, vm: GuardiansViewModel, on
                         style = SwissType.Body.copy(fontSize = 13.sp),
                     )
                     RecoveryField(state.codeInput, vm::onCodeChange, "SWGRD1.… or 0x…", monospace = true, pasteButton = true)
-                    RecoveryField(state.nameInput, vm::onNameChange, if (state.addMode == AddMode.MY_DEVICE) "Name (e.g. My iPad)" else "Name (e.g. Mom)")
+                    RecoveryField(state.nameInput, vm::onNameChange, if (state.addMode == AddMode.MY_DEVICE) "Name (e.g. My iPad)" else "Name (e.g. Alex)")
                     state.inputError?.let { Text(it, color = SwissColors.Red, fontSize = 12.sp) }
                     SwissButton("Add guardian", vm::confirmAdd, Modifier.fillMaxWidth(), height = 46.dp)
                     Text(

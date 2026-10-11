@@ -70,6 +70,7 @@ internal fun GuardianKind.icon(): ImageVector = when (this) {
     GuardianKind.SWISSQUOTE -> SwissIcons.Bank
     GuardianKind.MY_DEVICE -> SwissIcons.Phone
     GuardianKind.CLOSE_ONE -> SwissIcons.Users
+    GuardianKind.INSTITUTION -> SwissIcons.Shield
     GuardianKind.DEMO -> SwissIcons.Zap
 }
 
@@ -77,6 +78,7 @@ internal fun GuardianKind.color(): Color = when (this) {
     GuardianKind.SWISSQUOTE -> SwissColors.Orange
     GuardianKind.MY_DEVICE -> SwissColors.Blue
     GuardianKind.CLOSE_ONE -> SwissColors.Green
+    GuardianKind.INSTITUTION -> SwissColors.TextSoft
     GuardianKind.DEMO -> SwissColors.TextSecondary
 }
 

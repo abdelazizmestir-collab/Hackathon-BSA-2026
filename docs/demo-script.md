@@ -29,7 +29,7 @@ for a key holder.
 3. **Send (25 s).** In SwissWallet: Send, address, amount, confirm. Zero gas
    paid. Show the transaction on the explorer.
 4. **Guardians (15 s).** Profile, Guardians: Swissquote plus the client's
-   other device and two people close to them. 3 of 4.
+   other device, a person close to them and an independent institution. 3 of 4.
 5. **Lose the phone (10 s).** Profile, *Simulate lost phone*: the key is deleted.
 6. **Recover (50 s).** *I lost my phone*, new key, request code. Swissquote
    runs its identity check and signs. Two guardians sign on their own devices

@@ -5,7 +5,8 @@ meets Swiss rules, with every source and how far we checked it listed at the
 end. It is not legal advice.
 
 Design in one line: the client's device key is the only key that can spend; any
-3 of 4 guardians (Swissquote plus three chosen by the client) can replace a lost
+3 of 4 guardians (Swissquote plus three chosen by the client, possibly including
+an independent institution) can replace a lost
 key after a waiting period the client can cancel. See
 [custody-and-threat-model.md](custody-and-threat-model.md).
 
@@ -29,8 +30,11 @@ owner is a kind of control, even if no single member has it.
 The brief says control shared between Swissquote and a partner is a grey zone.
 In this design there is no partner institution:
 
-- The other three guardians are chosen by the client: their other device and
-  people close to them.
+- The other three guardians are chosen by the client: their other device,
+  people close to them, or an independent institution (e.g. a notary or a trust company, independent from both the client and Swissquote). Swissquote does not pick it and has no
+  agreement with it.
+- If the client picks such an institution, Swissquote + the institution reach 2
+  of the 3 signatures: they still need one of the client's own guardians.
 - Swissquote holds 1 signature. Three are required, so it always needs two of
   the client's own guardians.
 - A quorum cannot transfer anything. It can only install a new key, after a

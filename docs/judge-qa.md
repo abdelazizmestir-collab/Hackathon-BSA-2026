@@ -15,9 +15,11 @@ It is the one party that already knows who the client is and can check it again
 without any device or password. It gets one signature of the three needed.
 
 **Could Swissquote move the funds, alone or with a partner?**
-Alone, no. There is no partner institution: the other three guardians are
-chosen by the client. Swissquote always needs two of the client's own
-guardians, a waiting period, and the client can cancel.
+Alone, no. Swissquote has no partner: the other three guardians are chosen
+by the client, and one of them may be an independent institution (a notary, a
+trust company) that the client picks, not Swissquote. Even then Swissquote +
+the institution need one of the client's own guardians, a waiting period, and
+the client can cancel.
 
 **What if Swissquote disappears?**
 The client's three guardians recover the wallet without it. Approvals are

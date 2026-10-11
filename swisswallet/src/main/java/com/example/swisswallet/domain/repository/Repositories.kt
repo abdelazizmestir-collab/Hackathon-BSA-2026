@@ -42,8 +42,11 @@ interface GuardianRepository {
     val guardians: Flow<List<Guardian>>
     suspend fun upsert(guardian: Guardian)
     suspend fun remove(address: String)
-    /** Creates a guardian key on this phone (demo only) and returns it. */
-    suspend fun createDemoGuardian(): Guardian
+    /**
+     * Creates a guardian key on this phone (demo only) and returns it.
+     * [kind] = [GuardianKind.INSTITUTION] for the simulated independent institution.
+     */
+    suspend fun createDemoGuardian(kind: GuardianKind = GuardianKind.DEMO): Guardian
     /** Keys of the simulated guardians stored on this phone. */
     suspend fun demoGuardianKeys(): Map<String, org.web3j.crypto.ECKeyPair>
 }

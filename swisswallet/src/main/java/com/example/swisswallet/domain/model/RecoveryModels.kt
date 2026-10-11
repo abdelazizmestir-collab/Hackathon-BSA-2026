@@ -13,6 +13,12 @@ enum class GuardianKind(val label: String) {
     MY_DEVICE("My other device"),
     /** A friend or family member with SwissWallet in "guardian" mode. */
     CLOSE_ONE("Close one"),
+    /**
+     * An independent institution (e.g. a notary or a trust company): neither the client nor
+     * Swissquote. With it, Swissquote + the institution can't recover a wallet alone without one
+     * of the client's own guardians, and the client doesn't depend only on relatives.
+     */
+    INSTITUTION("Independent institution"),
     /** Key simulated on this phone so the demo works with a single emulator. */
     DEMO("Simulated (demo)"),
 }

@@ -29,7 +29,7 @@ import org.web3j.crypto.ECKeyPair
 
 /**
  * Names of my guardians, stored on this phone. On-chain the module only knows 4 addresses;
- * "Mom", "My iPad", "Swissquote" are just local labels.
+ * "Institution", "My iPad", "Swissquote" are just local labels.
  */
 class DataStoreGuardianRepository(
     private val store: DataStore<Preferences>,
@@ -64,13 +64,13 @@ class DataStoreGuardianRepository(
      * DEMO ONLY: creates a guardian whose key lives on this phone, so the whole 3-of-4 flow can be
      * shown with one emulator. In real life each guardian's key is on THEIR phone.
      */
-    override suspend fun createDemoGuardian(): Guardian {
+    override suspend fun createDemoGuardian(kind: GuardianKind): Guardian {
         val ids = demoIds()
         val id = "demo-${System.currentTimeMillis()}"
         val key = keys.getOrCreate(id)
         store.edit { it[K_DEMO_IDS] = (ids + id).joinToString(",") }
-        val name = DEMO_NAMES[ids.size % DEMO_NAMES.size]
-        val guardian = Guardian(EthKeys.address(key), name, GuardianKind.DEMO)
+        val name = if (kind == GuardianKind.INSTITUTION) INSTITUTION_NAME else DEMO_NAMES[ids.size % DEMO_NAMES.size]
+        val guardian = Guardian(EthKeys.address(key), name, kind)
         upsert(guardian)
         return guardian
     }
@@ -96,7 +96,9 @@ class DataStoreGuardianRepository(
     private companion object {
         val K_GUARDIANS = stringPreferencesKey("guardians_v1")
         val K_DEMO_IDS = stringPreferencesKey("demo_guardian_ids")
-        val DEMO_NAMES = listOf("Mom (simulated)", "Alex (simulated)", "Sam (simulated)", "Lea (simulated)")
+        val DEMO_NAMES = listOf("Alex (simulated)", "Sam (simulated)", "Lea (simulated)", "Noa (simulated)")
+        /** Simulated independent institution (neither the client nor Swissquote). */
+        const val INSTITUTION_NAME = "Institution (simulated)"
     }
 }
 

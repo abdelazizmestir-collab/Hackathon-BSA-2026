@@ -12,8 +12,9 @@ full documents.
 ## 1. Custody model and threat model
 
 - **Decision:** user-controlled spending with collective recovery authority.
-- **Swissquote alone or with a partner:** alone, no. There is no partner
-  institution; Swissquote always needs two of the client's own guardians.
+- **Swissquote alone or with a partner:** alone, no. Swissquote has no
+  partner; the client may choose an independent institution as a guardian, and
+  Swissquote + that institution still need one of the client's own guardians.
 - **If Swissquote is gone:** the client's three guardians recover without it.
 - **Main open risks:** an unlocked phone can spend; the recovery contract is
   new and unaudited; the spending key can change the guardians at once.

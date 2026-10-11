@@ -140,7 +140,7 @@ fun GuardianModeScreen(viewModel: GuardianModeViewModel, onBack: () -> Unit, sho
                     KindChip("For my own wallet", state.kind == GuardianKind.MY_DEVICE, Modifier.weight(1f)) { viewModel.onKindChange(GuardianKind.MY_DEVICE) }
                 }
             }
-            RecoveryField(state.name, viewModel::onNameChange, if (state.kind == GuardianKind.MY_DEVICE) "Name of this device (e.g. My iPad)" else "Your name (e.g. Mom)")
+            RecoveryField(state.name, viewModel::onNameChange, if (state.kind == GuardianKind.MY_DEVICE) "Name of this device (e.g. My iPad)" else "Your name (e.g. Alex)")
             state.inviteCode?.let {
                 CodeCard(
                     title = "Guardian code",

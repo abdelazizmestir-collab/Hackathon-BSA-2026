@@ -11,13 +11,15 @@ Text ready to paste into slides or to say. Longer answers are in
 | **Swissquote alone** | No | No |
 | **Swissquote + one of the client's guardians** | No | No |
 | **Swissquote + two of the client's guardians** | No | Yes, after the waiting period, unless the client cancels |
+| **Swissquote + the independent institution** (if the client picked one) | No | No: one of the client's own guardians is still needed |
 | **The client's three guardians, without Swissquote** | No | Yes, after the waiting period |
 
-One line under the table: *There is no partner institution. Swissquote always
-needs two people the client chose.*
+One line under the table: *Swissquote has no partner. The client chooses the
+other three guardians, possibly an independent institution, and Swissquote
+always needs at least one of the client's own guardians.*
 
-Do not reuse the earlier version of this slide: it showed "Swissquote +
-institution", and that guardian no longer exists in this design.
+Do not reuse the earlier version of this slide, where the institution was
+Swissquote's partner: here it is an option the client chooses.
 
 ## Slide: evidence
 
@@ -55,7 +57,8 @@ this wallet they generate it from inside the Swissquote app. The key lives in
 their phone's secure chip and is the only thing that can spend. Fees are paid
 for them. If they lose the phone, three of four guardians bring them back to
 the same wallet after a waiting period they can cancel: Swissquote is one
-guardian, and the other three are chosen by the client. Swissquote alone can do
+guardian, and the other three are chosen by the client, possibly including an
+independent institution. Swissquote alone can do
 nothing, and if Swissquote disappears the client's own guardians are enough.
 
 ## If asked what is not finished

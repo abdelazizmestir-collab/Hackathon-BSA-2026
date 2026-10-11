@@ -112,10 +112,15 @@ class GuardiansViewModel(
     }
 
     /** DEMO: guardian whose key is kept on this phone (lets you test 3-of-4 with one emulator). */
-    fun addDemoGuardian() {
+    fun addDemoGuardian() = addSimulated(GuardianKind.DEMO)
+
+    /** DEMO: the independent institution, simulated with a key kept on this phone. */
+    fun addInstitution() = addSimulated(GuardianKind.INSTITUTION)
+
+    private fun addSimulated(kind: GuardianKind) {
         viewModelScope.launch {
             try {
-                addToDraft(guardians.createDemoGuardian())
+                addToDraft(guardians.createDemoGuardian(kind))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

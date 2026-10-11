@@ -6,7 +6,7 @@ Two apps on the same phone:
   **automatic guardian #1** of that wallet.
 * **SwissWallet** — the crypto wallet: a **Coinbase Smart Wallet** (ERC-4337 smart account) controlled by a
   **passkey** in the phone's secure chip, with **gasless** transfers (Pimlico) and **social recovery
-  3-of-4** (Swissquote + your other device + close ones, 30 s safety delay for the demo, 48 h in production).
+  3-of-4** (Swissquote + your other device + close ones or an independent institution, 30 s safety delay for the demo, 48 h in production).
 
 ```
 SwissWallet/                 ← Android Studio project (open this folder)
@@ -98,7 +98,8 @@ The address of the safe never changes, so losing the phone doesn't lose the mone
 |---|---|---|
 | **Swissquote** (automatic) | When you tap *Generate my wallet*, Swissquote sends its guardian address to SwissWallet (`EXTRA_SWISSQUOTE_GUARDIAN`). It's pre-filled as guardian #1 and can't be removed. | On the new phone: *Ask Swissquote* opens Swissquote's **Approve wallet recovery** screen. It checks you're logged in and that the wallet is the one linked to your account, runs an **identity check (simulated: 2FA, selfie vs ID, SMS)**, then signs. |
 | **My other device** (tablet, old phone…) | On that device: SwissWallet → *Be a guardian* → *For my own wallet* → copy the **guardian code** (`SWGRD1.…`). On your phone: Profile → Guardians → *Add guardian* → *My other device* → paste. | It receives your **request code** (`SWREC1.…`), checks it (*You are a guardian of this wallet ✓*, fingerprint), taps *Approve* and sends back an **approval code** (`SWSIG1.…`) that you paste. |
-| **A close one** (mom, friend…) | Same, with *For a close one*. You can also paste a plain `0x…` address + a name. | Same as above. They can never see or move your money. |
+| **A close one** (friend, relative…) | Same, with *For a close one*. You can also paste a plain `0x…` address + a name. | Same as above. They can never see or move your money. |
+| **Independent institution** (e.g. a notary or a trust company) | A neutral third party, independent from you **and** from Swissquote, that you choose. In the demo: *Add guardian* → *Independent institution (demo)*, key simulated on this phone. | Its own identity check, then it signs like any guardian. Swissquote + the institution together still need one of your own guardians. |
 | **Simulated guardian (demo)** | *Add guardian* → *Simulated guardian (demo)*: a key stored on this phone, so the whole 3-of-4 flow works with **one emulator**. | *Approve with simulated guardians (demo)*. In real life each key would be on someone else's phone. |
 
 **Rule: 3 of 4.** Losing one guardian is fine; one (or two) guardians alone can do nothing.
@@ -163,7 +164,7 @@ Tested on the emulator (Pixel 10a, API 37) on Base Sepolia: generate → activat
 address, new passkey, and the new passkey signs the next operation. Note: copy/paste of codes needs a working
 clipboard (on this emulator Android Studio reported "System clipboard is unavailable"; on a real phone it works).
 
-Guardian names ("Mom", "My iPad") are only stored on the phone; on-chain a guardian is just an address.
+Guardian names ("Institution", "My iPad") are only stored on the phone; on-chain a guardian is just an address.
 The passkey isn't bound to biometrics in the demo (emulator); on a real phone you'd add
 `setUserAuthenticationRequired(true)`.
 
