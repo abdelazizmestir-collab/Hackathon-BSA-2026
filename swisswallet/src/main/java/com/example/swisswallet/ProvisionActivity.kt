@@ -14,9 +14,11 @@ import kotlinx.coroutines.launch
  * Invisible activity started by Swissquote ("Generate my wallet").
  * Protected by a signature permission: only apps signed with our key can call it.
  *
- * It creates the owner key in the Keystore (first time only), computes the counterfactual
- * smart-account address and returns it. Nothing is deployed on-chain yet: the account is
- * deployed automatically with its first UserOperation.
+ * It creates the passkey in the Keystore (first time only), computes the counterfactual
+ * Coinbase Smart Wallet address (owners = [passkey, recovery module]) and returns it.
+ * Swissquote also sends its guardian address: it becomes guardian #1 automatically when the
+ * user activates recovery. Nothing is deployed on-chain yet: the account is deployed
+ * automatically with its first UserOperation.
  */
 class ProvisionActivity : ComponentActivity() {
 
@@ -26,7 +28,8 @@ class ProvisionActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             try {
-                val account = container.walletRepository.provision()
+                val swissquoteGuardian = intent.getStringExtra(WalletContract.EXTRA_SWISSQUOTE_GUARDIAN)
+                val account = container.walletRepository.provision(swissquoteGuardian)
                 setResult(
                     Activity.RESULT_OK,
                     Intent().putExtra(WalletContract.EXTRA_SMART_ACCOUNT, account.smartAccountAddress),

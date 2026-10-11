@@ -53,10 +53,18 @@ import com.example.swisswallet.util.copyToClipboard
 import com.example.swisswallet.util.openUrl
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel, showMessage: (String) -> Unit, onLock: () -> Unit) {
+fun ProfileScreen(
+    viewModel: ProfileViewModel,
+    showMessage: (String) -> Unit,
+    onLock: () -> Unit,
+    onGuardians: () -> Unit,
+    onGuardianMode: () -> Unit,
+    onWalletWiped: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var confirmLock by remember { mutableStateOf(false) }
+    var confirmWipe by remember { mutableStateOf(false) }
 
     fun copy(label: String, value: String?) {
         if (value == null) return
@@ -91,6 +99,15 @@ fun ProfileScreen(viewModel: ProfileViewModel, showMessage: (String) -> Unit, on
                 }
             }
 
+            SectionTitle("Recovery")
+            SwissCard(Modifier.fillMaxWidth()) {
+                SettingRow(SwissIcons.Users, "Guardians", "3 of 4", onGuardians)
+                Divider1()
+                SettingRow(SwissIcons.Shield, "Be a guardian for someone", null, onGuardianMode)
+                Divider1()
+                SettingRow(SwissIcons.Phone, "Simulate lost phone (demo)", null) { confirmWipe = true }
+            }
+
             SectionTitle("Smart account (ERC-4337)")
             SwissCard(Modifier.fillMaxWidth()) {
                 SettingRow(SwissIcons.Wallet, "Account address", Formats.shortAddress(state.account?.smartAccountAddress ?: "—")) {
@@ -111,7 +128,7 @@ fun ProfileScreen(viewModel: ProfileViewModel, showMessage: (String) -> Unit, on
                     if (!state.paymasterConfigured) showMessage("Add PIMLICO_API_KEY to local.properties")
                 }
                 Divider1()
-                SettingRow(SwissIcons.External, "View on Etherscan", null) {
+                SettingRow(SwissIcons.External, "View on block explorer", null) {
                     state.account?.let { context.openUrl(ChainConfig.addressUrl(it.smartAccountAddress)) }
                 }
             }
@@ -120,8 +137,8 @@ fun ProfileScreen(viewModel: ProfileViewModel, showMessage: (String) -> Unit, on
             SwissCard(Modifier.fillMaxWidth()) {
                 ToggleRow(SwissIcons.Fingerprint, "Biometrics", state.biometrics, viewModel::onBiometrics)
                 Divider1()
-                SettingRow(SwissIcons.Key, "Owner key", Formats.shortAddress(state.account?.ownerAddress ?: "—")) {
-                    copy("Owner address", state.account?.ownerAddress)
+                SettingRow(SwissIcons.Key, "Passkey (this phone)", state.account?.passkeyFingerprint ?: "—") {
+                    showMessage("P-256 key in the secure chip · owner #${state.account?.ownerIndex ?: 0} of the wallet")
                 }
                 Divider1()
                 SettingRow(SwissIcons.Lock, "PIN code", null) { showMessage("PIN code is simulated in this concept") }
@@ -141,6 +158,13 @@ fun ProfileScreen(viewModel: ProfileViewModel, showMessage: (String) -> Unit, on
         }
     }
 
+    if (confirmWipe) {
+        WipeDialog(
+            onConfirm = { confirmWipe = false; viewModel.simulateLostPhone(onWalletWiped) },
+            onDismiss = { confirmWipe = false },
+        )
+    }
+
     if (confirmLock) {
         AlertDialog(
             onDismissRequest = { confirmLock = false },
@@ -151,6 +175,25 @@ fun ProfileScreen(viewModel: ProfileViewModel, showMessage: (String) -> Unit, on
             dismissButton = { TextButton(onClick = { confirmLock = false }) { Text("Cancel", color = Color.White) } },
         )
     }
+}
+
+@Composable
+private fun WipeDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SwissColors.Surface,
+        title = { Text("Simulate a lost phone?", color = Color.White) },
+        text = {
+            Text(
+                "This deletes this phone's passkey and local wallet data — like losing the phone. " +
+                    "Your funds stay on-chain. You'll then recover the wallet with your guardians (3 of 4). " +
+                    "Make sure protection is active first!",
+                color = SwissColors.TextSoft,
+            )
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Delete my key", color = SwissColors.Red) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = Color.White) } },
+    )
 }
 
 @Composable

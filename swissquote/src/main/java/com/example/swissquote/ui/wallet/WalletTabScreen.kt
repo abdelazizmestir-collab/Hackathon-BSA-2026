@@ -50,6 +50,7 @@ import com.example.core.designsystem.components.SwissButtonStyle
 import com.example.core.designsystem.components.SwissCard
 import com.example.core.designsystem.components.SwissSpinner
 import com.example.core.designsystem.components.Tag
+import com.example.swissquote.data.ProvisionInput
 import com.example.swissquote.data.ProvisionWalletContract
 
 @Composable
@@ -66,8 +67,8 @@ fun WalletTabScreen(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                WalletTabEvent.LaunchProvisioning -> try {
-                    provisionLauncher.launch("Swissquote")
+                is WalletTabEvent.LaunchProvisioning -> try {
+                    provisionLauncher.launch(ProvisionInput("Swissquote", event.swissquoteGuardian))
                 } catch (e: ActivityNotFoundException) {
                     viewModel.onProvisionResult(ProvisionResult.Failure("SwissWallet isn't installed on this device."))
                 } catch (e: SecurityException) {
@@ -296,7 +297,7 @@ private fun ReadyContent(address: String, onOpen: () -> Unit) {
                     ) {
                         Text(Formats.shortAddress(address, 8, 6), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                     }
-                    Text("ERC-4337 smart account · Sepolia testnet", style = SwissType.Caption)
+                    Text("Coinbase Smart Wallet · ERC-4337 · Base Sepolia", style = SwissType.Caption)
                 }
             }
             SwissButton("Open SwissWallet", onOpen, Modifier.fillMaxWidth(), style = SwissButtonStyle.Outline, trailingIcon = SwissIcons.External)

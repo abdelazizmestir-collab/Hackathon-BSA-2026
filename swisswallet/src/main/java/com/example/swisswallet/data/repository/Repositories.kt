@@ -5,16 +5,19 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.swisswallet.config.ChainConfig
 import com.example.swisswallet.data.aa.Abi
 import com.example.swisswallet.data.aa.Erc20
-import com.example.swisswallet.data.aa.SimpleSmartAccount
+import com.example.core.recovery.RecoveryPolicy
+import com.example.swisswallet.data.aa.CoinbaseSmartAccount
+import com.example.swisswallet.data.aa.Hex
+import com.example.swisswallet.data.aa.RecoveryModule
 import com.example.swisswallet.domain.aa.BundlerClient
 import com.example.swisswallet.domain.aa.EthereumRpc
-import com.example.swisswallet.domain.aa.KeyVault
-import com.example.swisswallet.domain.aa.SmartAccount
+import com.example.swisswallet.domain.aa.PasskeyVault
 import com.example.swisswallet.domain.model.ChartRange
 import com.example.swisswallet.domain.model.Portfolio
 import com.example.swisswallet.domain.model.Price
@@ -42,6 +45,7 @@ import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigDecimal
+import java.math.BigInteger
 import kotlin.random.Random
 
 /** Single DataStore for the whole SwissWallet process. */
@@ -53,7 +57,7 @@ val Context.walletDataStore: DataStore<Preferences> by preferencesDataStore(name
 
 class DefaultWalletRepository(
     private val store: DataStore<Preferences>,
-    private val vault: KeyVault,
+    private val vault: PasskeyVault,
     private val rpc: EthereumRpc,
 ) : WalletRepository {
 
@@ -61,34 +65,126 @@ class DefaultWalletRepository(
 
     override val account: Flow<WalletAccount?> = store.data
         .map { p ->
-            val owner = p[KEY_OWNER]
-            val sa = p[KEY_SMART_ACCOUNT]
-            if (owner != null && sa != null) WalletAccount(owner, sa) else null
+            val address = p[K_ADDRESS] ?: return@map null
+            WalletAccount(
+                smartAccountAddress = address,
+                passkeyId = p[K_PASSKEY] ?: return@map null,
+                passkeyFingerprint = p[K_FINGERPRINT].orEmpty(),
+                ownerIndex = p[K_OWNER_INDEX] ?: 0,
+                swissquoteGuardian = p[K_SQ_GUARDIAN],
+            )
         }
         .distinctUntilChanged()
 
+    override val lastWalletHint: Flow<String?> = store.data.map { it[K_LAST_WALLET] }.distinctUntilChanged()
+
     override suspend fun currentAccount(): WalletAccount? = account.first()
 
-    override suspend fun provision(): WalletAccount = mutex.withLock {
-        currentAccount()?.let { return@withLock it }
-        val signer = vault.getOrCreateSigner()
-        val address = SimpleSmartAccount.computeAddress(signer.address, rpc)
-        store.edit {
-            it[KEY_OWNER] = signer.address
-            it[KEY_SMART_ACCOUNT] = address
+    override suspend fun provision(swissquoteGuardian: String?): WalletAccount = mutex.withLock {
+        currentAccount()?.let { existing ->
+            // Already generated: just remember Swissquote's guardian address if we didn't have it.
+            if (swissquoteGuardian != null && existing.swissquoteGuardian == null) {
+                store.edit { it[K_SQ_GUARDIAN] = swissquoteGuardian }
+                return@withLock existing.copy(swissquoteGuardian = swissquoteGuardian)
+            }
+            return@withLock existing
         }
-        WalletAccount(signer.address, address)
+
+        // 1. Passkey (P-256) in the phone's secure hardware.
+        val passkeyId = "main-" + System.currentTimeMillis()
+        val passkey = vault.create(passkeyId)
+
+        // 2. Owners of the future wallet: [our passkey, the recovery module].
+        val owners = listOf(
+            CoinbaseSmartAccount.passkeyOwner(passkey.x, passkey.y),
+            CoinbaseSmartAccount.addressOwner(RecoveryModule.address),
+        )
+
+        // 3. Address computed by the Coinbase factory (CREATE2): known before the contract exists.
+        val factory = resolveFactory()
+        val address = CoinbaseSmartAccount.computeAddress(rpc, factory, owners, BigInteger.ZERO)
+
+        val fingerprint = RecoveryPolicy.fingerprint(passkey.x, passkey.y)
+        store.edit {
+            it[K_ADDRESS] = address
+            it[K_PASSKEY] = passkeyId
+            it[K_FINGERPRINT] = fingerprint
+            it[K_OWNER_INDEX] = 0
+            it[K_FACTORY] = factory
+            it[K_INIT_OWNERS] = owners.joinToString(",") { o -> Hex.of(o) }
+            it[K_LAST_WALLET] = address
+            if (swissquoteGuardian != null) it[K_SQ_GUARDIAN] = swissquoteGuardian
+        }
+        WalletAccount(address, passkeyId, fingerprint, 0, swissquoteGuardian)
     }
 
-    override suspend fun smartAccount(): SmartAccount {
-        val acc = currentAccount() ?: error("No wallet on this device yet. Generate it from the Swissquote app.")
-        val signer = vault.getSigner() ?: error("Owner key not found on this device.")
-        return SimpleSmartAccount(owner = signer, address = acc.smartAccountAddress, rpc = rpc)
+    override suspend fun smartAccount(): CoinbaseSmartAccount {
+        val p = store.data.first()
+        val address = p[K_ADDRESS] ?: error("No wallet on this device yet. Generate it from the Swissquote app.")
+        val passkey = vault.get(p[K_PASSKEY].orEmpty()) ?: error("This phone's passkey was not found. Recover your wallet.")
+        return CoinbaseSmartAccount(
+            address = address,
+            passkey = passkey,
+            ownerIndex = p[K_OWNER_INDEX] ?: 0,
+            initialOwners = p[K_INIT_OWNERS].orEmpty().split(",").filter { it.isNotBlank() }.map(Hex::bytes),
+            factory = p[K_FACTORY] ?: ChainConfig.CSW_FACTORY_V1,
+            factoryNonce = BigInteger.ZERO,
+            rpc = rpc,
+            entryPoint = ChainConfig.ENTRY_POINT_V06,
+            chainId = ChainConfig.CHAIN_ID,
+        )
+    }
+
+    override suspend fun adoptRecoveredWallet(
+        wallet: String,
+        passkeyId: String,
+        ownerIndex: Int,
+        swissquoteGuardian: String?,
+    ): WalletAccount = mutex.withLock {
+        val passkey = vault.get(passkeyId) ?: error("Recovery passkey not found")
+        val fingerprint = RecoveryPolicy.fingerprint(passkey.x, passkey.y)
+        store.edit {
+            it[K_ADDRESS] = wallet
+            it[K_PASSKEY] = passkeyId
+            it[K_FINGERPRINT] = fingerprint
+            it[K_OWNER_INDEX] = ownerIndex
+            it.remove(K_INIT_OWNERS) // already deployed: no initCode needed any more
+            it[K_FACTORY] = ChainConfig.CSW_FACTORY_V1
+            it[K_LAST_WALLET] = wallet
+            if (swissquoteGuardian != null) it[K_SQ_GUARDIAN] = swissquoteGuardian
+        }
+        WalletAccount(wallet, passkeyId, fingerprint, ownerIndex, swissquoteGuardian)
+    }
+
+    override suspend fun wipeThisDevice() {
+        mutex.withLock {
+            val p = store.data.first()
+            p[K_PASSKEY]?.let { vault.delete(it) }
+            store.edit {
+                listOf(K_ADDRESS, K_PASSKEY, K_FINGERPRINT, K_FACTORY, K_INIT_OWNERS).forEach { k -> it.remove(k) }
+                it.remove(K_OWNER_INDEX)
+                // K_LAST_WALLET and K_SQ_GUARDIAN stay: they're public info, handy to prefill the recovery.
+            }
+        }
+    }
+
+    /** Coinbase Smart Wallet factory v1 (viem's default), or v1.1 if v1 isn't on this chain. */
+    private suspend fun resolveFactory(): String = when {
+        rpc.getCode(ChainConfig.CSW_FACTORY_V1).isNotEmpty() -> ChainConfig.CSW_FACTORY_V1
+        rpc.getCode(ChainConfig.CSW_FACTORY_V1_1).isNotEmpty() -> ChainConfig.CSW_FACTORY_V1_1
+        else -> error("Coinbase Smart Wallet isn't deployed on ${ChainConfig.NETWORK_NAME}")
     }
 
     private companion object {
-        val KEY_OWNER = stringPreferencesKey("owner_address")
-        val KEY_SMART_ACCOUNT = stringPreferencesKey("smart_account_address")
+        // "v2" = Coinbase Smart Wallet. The old SimpleAccount keys (v1) are simply ignored.
+        val K_ADDRESS = stringPreferencesKey("wallet_v2_address")
+        val K_PASSKEY = stringPreferencesKey("wallet_v2_passkey_id")
+        val K_FINGERPRINT = stringPreferencesKey("wallet_v2_fingerprint")
+        val K_OWNER_INDEX = intPreferencesKey("wallet_v2_owner_index")
+        val K_FACTORY = stringPreferencesKey("wallet_v2_factory")
+        val K_INIT_OWNERS = stringPreferencesKey("wallet_v2_init_owners")
+        val K_SQ_GUARDIAN = stringPreferencesKey("wallet_v2_swissquote_guardian")
+        val K_LAST_WALLET = stringPreferencesKey("last_wallet_hint")
     }
 }
 
@@ -162,6 +258,10 @@ class DataStoreTransactionRepository(
         }
     }
 
+    override suspend fun clear() {
+        mutex.withLock { store.edit { it[KEY_HISTORY] = "[]" } }
+    }
+
     override suspend fun syncPending() {
         if (!ChainConfig.hasPimlicoKey) return
         val pending = transactions.first().filter { it.status == TxStatus.PENDING && !it.isDemo && it.userOpHash != null }
@@ -189,7 +289,7 @@ class DataStoreTransactionRepository(
         return listOf(
             TxRecord("demo-1", TxKind.DEPOSIT, "CHF", "500.00", "Swissquote account", now - day - 3_600_000, TxStatus.CONFIRMED, isDemo = true),
             TxRecord("demo-2", TxKind.SWAP, "USDC", "25.00", "ETH → USDC", now - day - 7_200_000, TxStatus.CONFIRMED, isDemo = true),
-            TxRecord("demo-3", TxKind.RECEIVED, "ETH", "0.05", "Sepolia faucet", now - 3 * day, TxStatus.CONFIRMED, isDemo = true),
+            TxRecord("demo-3", TxKind.RECEIVED, "ETH", "0.05", "Testnet faucet", now - 3 * day, TxStatus.CONFIRMED, isDemo = true),
         )
     }
 

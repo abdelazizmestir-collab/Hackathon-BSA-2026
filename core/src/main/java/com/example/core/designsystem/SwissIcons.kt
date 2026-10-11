@@ -128,4 +128,10 @@ object SwissIcons {
     val Zap by lazy { icon("zap", "M13 2 4 14h7l-1 8 9-12h-7z") }
     val Image by lazy { icon("image", rect(3f, 4f, 18f, 16f, 2f), "m3 16 5-5 4 4 3-3 6 6", circle(15.5f, 8.5f, 1.5f)) }
     val Layers by lazy { icon("layers", "M12 3 2 8l10 5 10-5z", "m2 13 10 5 10-5") }
+
+    // Recovery / guardians
+    val Users by lazy { icon("users", circle(9f, 8f, 4f), "M2 21a7 7 0 0 1 14 0", "M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3") }
+    val Phone by lazy { icon("phone", rect(6f, 2f, 12f, 20f, 2.5f), "M11 18h2") }
+    val Refresh by lazy { icon("refresh", "M21 12a9 9 0 0 1-15.5 6.3L3 16", "M3 21v-5h5", "M3 12a9 9 0 0 1 15.5-6.3L21 8", "M21 3v5h-5") }
+    val Clock by lazy { icon("clock", circle(12f, 12f, 9f), "M12 7v5l3 2") }
 }

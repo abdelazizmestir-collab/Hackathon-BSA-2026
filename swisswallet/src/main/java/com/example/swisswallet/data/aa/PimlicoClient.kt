@@ -13,7 +13,7 @@ import org.json.JSONObject
 /**
  * Pimlico exposes the **bundler** (eth_sendUserOperation, eth_getUserOperationReceipt…) and the
  * **verifying paymaster** (pm_sponsorUserOperation) on the same endpoint:
- * `https://api.pimlico.io/v2/sepolia/rpc?apikey=…`
+ * `https://api.pimlico.io/v2/base-sepolia/rpc?apikey=…` (EntryPoint v0.6 here).
  */
 class PimlicoClient(private val rpc: JsonRpcClient) : BundlerClient, PaymasterClient {
 
@@ -34,14 +34,12 @@ class PimlicoClient(private val rpc: JsonRpcClient) : BundlerClient, PaymasterCl
     override suspend fun sponsorUserOperation(userOp: UserOperation, entryPoint: String): SponsorshipData {
         val r = rpc.call("pm_sponsorUserOperation", userOp.toRpcJson(), entryPoint) as? JSONObject
             ?: throw RpcException(-1, "Empty sponsorship response")
+        // EntryPoint v0.6 format: one `paymasterAndData` blob = paymaster address ‖ validity ‖ signature.
         return SponsorshipData(
             callGasLimit = Hex.toBigInt(r.getString("callGasLimit")),
             verificationGasLimit = Hex.toBigInt(r.getString("verificationGasLimit")),
             preVerificationGas = Hex.toBigInt(r.getString("preVerificationGas")),
-            paymaster = r.getString("paymaster"),
-            paymasterVerificationGasLimit = Hex.toBigInt(r.getString("paymasterVerificationGasLimit")),
-            paymasterPostOpGasLimit = Hex.toBigInt(r.getString("paymasterPostOpGasLimit")),
-            paymasterData = Hex.bytes(r.optString("paymasterData", "0x")),
+            paymasterAndData = Hex.bytes(r.getString("paymasterAndData")),
         )
     }
 

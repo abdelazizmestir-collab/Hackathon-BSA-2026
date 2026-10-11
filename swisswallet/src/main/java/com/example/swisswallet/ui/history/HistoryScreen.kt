@@ -214,7 +214,7 @@ private fun TxDetailSheet(tx: TxRecord, onDismiss: () -> Unit) {
             val hash = tx.txHash
             if (hash != null) {
                 SwissButton(
-                    "View on Etherscan", { context.openUrl(ChainConfig.txUrl(hash)) },
+                    "View on block explorer", { context.openUrl(ChainConfig.txUrl(hash)) },
                     Modifier.fillMaxWidth(), style = SwissButtonStyle.Outline, trailingIcon = SwissIcons.External,
                 )
             }

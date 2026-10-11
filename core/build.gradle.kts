@@ -35,5 +35,8 @@ dependencies {
     api(libs.androidx.lifecycle.runtime.compose)
     api(libs.androidx.lifecycle.viewmodel.compose)
     api(libs.androidx.navigation.compose)
+    // Shared crypto (keccak / secp256k1) + storage for guardian keys, used by both apps.
+    api(libs.androidx.datastore.preferences)
+    api(libs.web3j.crypto)
     debugApi(libs.androidx.compose.ui.tooling)
 }

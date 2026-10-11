@@ -23,17 +23,25 @@ class AndroidWalletAppLauncher(private val context: Context) : WalletAppLauncher
     }
 }
 
+/** What Swissquote sends when generating the wallet. */
+data class ProvisionInput(
+    val clientName: String,
+    /** Swissquote's guardian address → guardian #1 of the wallet's social recovery, automatically. */
+    val swissquoteGuardian: String,
+)
+
 /**
  * ActivityResult contract: asks SwissWallet to generate the wallet and give us back the
  * smart-account address. SwissWallet's activity is transparent, so the user stays on our
  * "Generating your wallet…" screen.
  */
-class ProvisionWalletContract : ActivityResultContract<String, ProvisionResult>() {
+class ProvisionWalletContract : ActivityResultContract<ProvisionInput, ProvisionResult>() {
 
-    override fun createIntent(context: Context, input: String): Intent =
+    override fun createIntent(context: Context, input: ProvisionInput): Intent =
         Intent(WalletContract.ACTION_PROVISION)
             .setPackage(WalletContract.WALLET_PACKAGE)
-            .putExtra(WalletContract.EXTRA_CLIENT_NAME, input)
+            .putExtra(WalletContract.EXTRA_CLIENT_NAME, input.clientName)
+            .putExtra(WalletContract.EXTRA_SWISSQUOTE_GUARDIAN, input.swissquoteGuardian)
 
     override fun parseResult(resultCode: Int, intent: Intent?): ProvisionResult {
         val address = intent?.getStringExtra(WalletContract.EXTRA_SMART_ACCOUNT)

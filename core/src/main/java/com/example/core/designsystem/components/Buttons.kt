@@ -60,14 +60,15 @@ fun SwissButton(
         SwissButtonStyle.Danger -> SwissColors.Red.copy(alpha = 0.12f) to SwissColors.Red
     }
     val clickable = enabled && !loading
+    // alpha first, so the background is dimmed / restored together with the content
+    // (applied after the background, the colour wasn't redrawn when a button became enabled).
     var m = modifier
+        .alpha(if (enabled) 1f else 0.45f)
         .height(height)
         .clip(shape)
         .background(bg)
     if (style == SwissButtonStyle.Outline) m = m.border(1.5.dp, Color.White.copy(alpha = 0.85f), shape)
-    m = m
-        .alpha(if (enabled) 1f else 0.45f)
-        .clickable(enabled = clickable, role = Role.Button, onClick = onClick)
+    m = m.clickable(enabled = clickable, role = Role.Button, onClick = onClick)
 
     Box(modifier = m, contentAlignment = Alignment.Center) {
         AnimatedContent(

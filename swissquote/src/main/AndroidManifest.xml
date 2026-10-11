@@ -8,6 +8,12 @@
         android:protectionLevel="signature" />
     <uses-permission android:name="com.example.swisswallet.permission.PROVISION_WALLET" />
 
+    <!-- SwissWallet asks us (as automatic guardian) to approve a wallet recovery. -->
+    <permission
+        android:name="com.example.swissquote.permission.GUARDIAN"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.example.swissquote.permission.GUARDIAN" />
+
     <!-- Android 11+ package visibility: we need to see / launch SwissWallet. -->
     <queries>
         <package android:name="com.example.swisswallet" />
@@ -29,6 +35,19 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- "Approve wallet recovery": Swissquote acts as guardian #1 after an identity check. -->
+        <activity
+            android:name=".guardian.GuardianApprovalActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:permission="com.example.swissquote.permission.GUARDIAN"
+            android:theme="@style/Theme.Swissquote">
+            <intent-filter>
+                <action android:name="com.example.swissquote.action.APPROVE_RECOVERY" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
     </application>

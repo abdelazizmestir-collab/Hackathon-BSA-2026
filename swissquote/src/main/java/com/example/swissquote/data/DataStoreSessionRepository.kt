@@ -22,7 +22,8 @@ class DataStoreSessionRepository(
 
     private object Keys {
         val HAS_ACCOUNT = booleanPreferencesKey("has_account")
-        val WALLET_ADDRESS = stringPreferencesKey("wallet_address")
+        // v2 = Coinbase Smart Wallet (the old SimpleAccount address, key "wallet_address", is ignored).
+        val WALLET_ADDRESS = stringPreferencesKey("wallet_address_v2")
     }
 
     override val session: Flow<Session> = store.data

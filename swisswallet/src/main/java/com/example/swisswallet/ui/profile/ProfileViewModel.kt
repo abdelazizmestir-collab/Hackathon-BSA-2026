@@ -9,6 +9,7 @@ import com.example.swisswallet.di.AppContainer
 import com.example.swisswallet.domain.aa.EthereumRpc
 import com.example.swisswallet.domain.model.WalletAccount
 import com.example.swisswallet.domain.repository.SettingsRepository
+import com.example.swisswallet.domain.repository.TransactionRepository
 import com.example.swisswallet.domain.repository.WalletRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,7 @@ data class ProfileUiState(
 class ProfileViewModel(
     private val wallet: WalletRepository,
     private val settings: SettingsRepository,
+    private val history: TransactionRepository,
     private val rpc: EthereumRpc,
 ) : ViewModel() {
 
@@ -62,12 +64,21 @@ class ProfileViewModel(
         }
     }
 
+    /** Demo: forget this phone's passkey + local data, as if the phone was lost. Funds stay on-chain. */
+    fun simulateLostPhone(onDone: () -> Unit) {
+        viewModelScope.launch {
+            wallet.wipeThisDevice()
+            history.clear()
+            onDone()
+        }
+    }
+
     fun onBiometrics(enabled: Boolean) { viewModelScope.launch { settings.setBiometrics(enabled) } }
     fun onNotifications(enabled: Boolean) { viewModelScope.launch { settings.setNotifications(enabled) } }
 
     companion object {
         fun factory(c: AppContainer) = viewModelFactory {
-            initializer { ProfileViewModel(c.walletRepository, c.settingsRepository, c.ethereumRpc) }
+            initializer { ProfileViewModel(c.walletRepository, c.settingsRepository, c.transactionRepository, c.ethereumRpc) }
         }
     }
 }

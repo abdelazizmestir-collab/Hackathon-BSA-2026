@@ -21,7 +21,7 @@ data class Token(
 
 object Tokens {
     val ETH = Token("ETH", "Ethereum", 18, null, "Ξ", 0xFF627EEA)
-    val USDC = Token("USDC", "USD Coin", 6, ChainConfig.USDC_SEPOLIA, "$", 0xFF2775CA)
+    val USDC = Token("USDC", "USD Coin", 6, ChainConfig.USDC, "$", 0xFF2775CA)
     val all = listOf(ETH, USDC)
     fun bySymbol(symbol: String?): Token = all.firstOrNull { it.symbol.equals(symbol, ignoreCase = true) } ?: ETH
 }
@@ -65,12 +65,17 @@ enum class ChartRange(val label: String, val points: Int) {
 
 /**
  * The wallet as seen by the app.
- * - [ownerAddress]: EOA whose private key lives (encrypted) in the Android Keystore. It only *signs*.
- * - [smartAccountAddress]: the ERC-4337 SimpleAccount contract that actually holds the funds.
+ * - [smartAccountAddress]: the Coinbase Smart Wallet contract (ERC-4337) that actually holds the funds.
+ * - [passkeyId] / [passkeyFingerprint]: the P-256 passkey of THIS phone (owner of the wallet).
+ * - [ownerIndex]: position of that passkey in the wallet's owner list (0 at creation, changes after a recovery).
+ * - [swissquoteGuardian]: Swissquote's guardian address (sent by Swissquote when the wallet was generated).
  */
 data class WalletAccount(
-    val ownerAddress: String,
     val smartAccountAddress: String,
+    val passkeyId: String,
+    val passkeyFingerprint: String,
+    val ownerIndex: Int,
+    val swissquoteGuardian: String?,
 )
 
 enum class TxKind { SENT, RECEIVED, DEPOSIT, SWAP }
@@ -104,7 +109,7 @@ sealed interface SendProgress {
     data object Preparing : SendProgress
     /** Asking Pimlico's paymaster to sponsor (and estimate) the UserOperation. */
     data object Sponsoring : SendProgress
-    /** Signing the userOpHash with the owner key. */
+    /** Signing the userOpHash with the passkey (WebAuthn P-256). */
     data object Signing : SendProgress
     /** eth_sendUserOperation to the bundler. */
     data object Submitting : SendProgress

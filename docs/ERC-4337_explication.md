@@ -8,10 +8,11 @@ Exemples dans ce projet :
 
 | Contrat | Rôle |
 |---|---|
-| **USDC** (`0x1c7D…7238`) | un token ERC-20 : tient un tableau `solde[adresse]` + une fonction `transfer(to, amount)` |
-| **EntryPoint v0.7** (`0x0000…a032`) | le contrat central d'ERC-4337, le même sur toutes les chaînes |
-| **SimpleAccountFactory** (`0x91E6…8985`) | une « usine » qui déploie des wallets-contrats |
-| **SimpleAccount** (ton wallet) | **ton wallet est lui-même un smart contract** |
+| **USDC** (`0x036C…CF7e` sur Base Sepolia) | un token ERC-20 : tient un tableau `solde[adresse]` + une fonction `transfer(to, amount)` |
+| **EntryPoint v0.6** (`0x5FF1…2789`) | le contrat central d'ERC-4337, le même sur toutes les chaînes (version utilisée par Coinbase Smart Wallet) |
+| **Coinbase Smart Wallet Factory** (`0x0BA5…428a`) | une « usine » qui déploie des wallets-contrats |
+| **SwissRecoveryModule** (`0xB378…428F`) | notre contrat de récupération sociale (3 garants sur 4 + délai) |
+| **Coinbase Smart Wallet** (ton wallet) | **ton wallet est lui-même un smart contract** |
 
 Pour appeler une fonction, on envoie des **données encodées en ABI** :
 `keccak256("transfer(address,uint256)")` → 4 premiers octets `0xa9059cbb` (le *selector*),
@@ -48,7 +49,7 @@ transaction, on envoie une **UserOperation** à un réseau parallèle.
  │  SwissWallet  │ ─────────────────▶ │   BUNDLER    │ ───────────────────▶ │  EntryPoint  │
  │ (app Android) │                    │  (Pimlico)   │  vraie transaction   │   (contrat)  │
  └──────┬────────┘                    └──────────────┘                      └──────┬───────┘
-        │ pm_sponsorUserOperation                                     1. validateUserOp │ → SimpleAccount
+        │ pm_sponsorUserOperation                                     1. validateUserOp │ → Coinbase Smart Wallet
         ▼                                                             2. validatePaymaster │ → Paymaster
  ┌──────────────┐                                                     3. execute(to, value, data)
  │  PAYMASTER   │  « je paie le gas de cette opération » (signature)
@@ -59,12 +60,12 @@ transaction, on envoie une **UserOperation** à un réseau parallèle.
 | Acteur | Dans le code | Rôle |
 |---|---|---|
 | **UserOperation** | `domain/aa/AccountAbstraction.kt` | l'« intention » : qui (`sender`), quoi (`callData`), nonce, gas, paymaster, signature |
-| **Smart Account** | `SimpleSmartAccount.kt` | le contrat-wallet ; vérifie la signature du propriétaire et exécute `execute(to, value, data)` |
-| **Owner key** | `KeystoreKeyVault.kt` | clé secp256k1 générée sur le téléphone, chiffrée par une clé AES du **Android Keystore** ; elle ne fait que **signer** |
+| **Smart Account** | `CoinbaseSmartAccount.kt` | le contrat-wallet (Coinbase Smart Wallet) ; vérifie la signature d'un de ses owners et exécute `execute(to, value, data)` |
+| **Passkey** | `AndroidPasskeyVault.kt` + `WebAuthnAssertion.kt` | clé P-256 générée **dans la puce sécurisée** (Android Keystore), jamais exportable ; elle ne fait que **signer** (format WebAuthn) |
 | **Bundler** | `PimlicoClient` (`eth_sendUserOperation`) | récupère les UserOps, les regroupe et envoie *une* vraie transaction à l'EntryPoint (il avance le gas) |
 | **Paymaster** | `PimlicoClient` (`pm_sponsorUserOperation`) | contrat qui rembourse le gas au bundler à la place de l'utilisateur |
-| **EntryPoint** | `ChainConfig.ENTRY_POINT_V07` | le contrat « arbitre » : valide, exécute, fait payer le bon acteur |
-| **Factory** | `ChainConfig.SIMPLE_ACCOUNT_FACTORY_V07` | déploie ton wallet au premier envoi (champ `factory` / `factoryData`) |
+| **EntryPoint** | `ChainConfig.ENTRY_POINT_V06` | le contrat « arbitre » : valide, exécute, fait payer le bon acteur |
+| **Factory** | `ChainConfig.CSW_FACTORY_V1` | déploie ton wallet au premier envoi (champ `initCode`) |
 
 ## 5. Pimlico, concrètement
 
@@ -72,12 +73,12 @@ Pimlico est un **fournisseur d'infrastructure ERC-4337** : il fait tourner un bu
 et des paymasters, accessibles via une simple URL JSON-RPC :
 
 ```
-https://api.pimlico.io/v2/sepolia/rpc?apikey=TA_CLE
+https://api.pimlico.io/v2/base-sepolia/rpc?apikey=TA_CLE
 ```
 
 * **Bundler** : `eth_sendUserOperation`, `eth_getUserOperationReceipt`, `pimlico_getUserOperationGasPrice`.
 * **Verifying paymaster** : `pm_sponsorUserOperation` → Pimlico simule ton opération, estime le gas,
-  et renvoie `paymaster` + `paymasterData` (sa **signature** qui dit « je paie »). L'EntryPoint vérifie
+  et renvoie `paymasterAndData` (son adresse + sa **signature** qui dit « je paie »). L'EntryPoint vérifie
   cette signature on-chain, puis débite le **dépôt de Pimlico**, pas ton wallet.
 * Pimlico se rembourse sur **ton solde Pimlico** (dashboard). Sur les **testnets c'est gratuit**.
   En production tu crées une *sponsorship policy* (ex. : max 5 CHF/jour/utilisateur).
@@ -86,35 +87,43 @@ https://api.pimlico.io/v2/sepolia/rpc?apikey=TA_CLE
 
 ## 6. Ce que fait l'app quand tu appuies sur « Confirm & send »
 
-Fichier : `data/aa/AaTransferService.kt`. Chaque étape est affichée dans l'écran Send.
+Fichiers : `data/aa/AaTransferService.kt` + `data/aa/UserOperationSender.kt` (le « tuyau » ERC-4337
+partagé par toutes les actions on-chain de l'app). Chaque étape est affichée dans l'écran Send.
 
 1. **Preparing** — lit le solde, le `nonce` (`EntryPoint.getNonce`), si le wallet est déjà déployé
-   (`eth_getCode`) et le prix du gas. Construit le `callData` :
+   (`eth_getCode`) et le prix du gas. Construit le `callData` du **Coinbase Smart Wallet** :
    * ETH : `execute(destinataire, montant, 0x)`
    * USDC : `execute(USDC, 0, transfer(destinataire, montant))`
-   * premier envoi : ajoute `factory` + `factoryData = createAccount(owner, 0)` → déploiement automatique.
-2. **Sponsoring** — `pm_sponsorUserOperation` avec une *fausse* signature (stub) pour la simulation ;
-   Pimlico renvoie les limites de gas + `paymasterData`.
-3. **Signing** — calcule le `userOpHash` (format v0.7, `UserOperationHasher`) puis le signe en
-   EIP-191 avec la clé du Keystore. Le SimpleAccount vérifiera `ecrecover(hash) == owner`.
+   * premier envoi : ajoute `initCode = factory ‖ createAccount([passkey, module], 0)` → déploiement automatique.
+2. **Sponsoring** — `pm_sponsorUserOperation` (EntryPoint **v0.6**) avec une signature « stub » ;
+   Pimlico renvoie les limites de gas + `paymasterAndData` (« c'est moi, Pimlico, qui paie »).
+3. **Signing** — calcule le `userOpHash` puis le fait signer par la **passkey** (clé P-256 dans la puce
+   sécurisée, Android Keystore). La signature est emballée au format **WebAuthn** (comme une passkey de
+   navigateur) : le contrat vérifie on-chain que le `challenge` = userOpHash et que la signature P-256 est bonne.
 4. **Submitting** — `eth_sendUserOperation` → le bundler renvoie le `userOpHash`.
-5. **Waiting** — on interroge `eth_getUserOperationReceipt` toutes les 2 s → `transactionHash` réel
-   → lien Etherscan.
+5. **Waiting** — `eth_getUserOperationReceipt` toutes les 2 s → `transactionHash` réel → lien explorer.
 
 ## 7. Génération du wallet (Swissquote → SwissWallet)
 
-1. Swissquote lance `ProvisionActivity` de SwissWallet (transparente) via `startActivityForResult`,
-   protégée par une **permission de signature** (seules nos apps peuvent l'appeler).
-2. SwissWallet génère la clé owner → la chiffre dans le Keystore.
-3. Elle calcule l'**adresse contrefactuelle** du SimpleAccount (`factory.getAddress(owner, 0)`) :
-   le contrat n'existe pas encore, mais son adresse est déjà connue grâce à CREATE2.
+1. Swissquote lance `ProvisionActivity` de SwissWallet (transparente), protégée par une **permission de
+   signature** (seules nos apps peuvent l'appeler). Il envoie aussi **son adresse de garant**.
+2. SwissWallet crée une **passkey** (P-256) dans le Keystore.
+3. Elle calcule l'**adresse contrefactuelle** du Coinbase Smart Wallet
+   (`factory.getAddress([passkey, module de récupération], 0)`) : le contrat n'existe pas encore, mais son
+   adresse est déjà connue grâce à CREATE2.
 4. Elle renvoie l'adresse à Swissquote → « Your wallet is ready! ».
-5. Le contrat ne sera déployé qu'au **premier envoi** — et c'est le paymaster qui paie ce déploiement aussi.
+5. Le contrat n'est déployé qu'à la **première opération** — et c'est le paymaster qui paie ce déploiement.
 
-## 8. Limites (c'est un concept étudiant)
+## 8. Récupération sociale
 
-* Testnet Sepolia uniquement. Pour le mainnet : backend qui garde la clé API Pimlico + sponsorship policy.
-* L'historique « reçu » n'est pas indexé (il faudrait un indexer type Alchemy/The Graph) : l'app
-  affiche tes envois réels + quelques entrées *Demo*.
-* Une seule clé owner (pas encore de récupération sociale ni de passkey) — c'est justement ce que
-  l'Account Abstraction permettrait d'ajouter ensuite.
+Voir **Recuperation_sociale.md** : 4 garants (Swissquote automatiquement, ton autre appareil, tes proches),
+règle **3 sur 4**, délai de sécurité **30 s** en démo (48 h en vrai), annulation possible.
+
+## 9. Limites (c'est un concept étudiant)
+
+* Testnet uniquement (Base Sepolia par défaut). Pour le mainnet : backend qui garde la clé API Pimlico +
+  sponsorship policy, clé de garant Swissquote dans un HSM côté serveur, vraie vérification d'identité.
+* L'historique « reçu » n'est pas indexé (il faudrait un indexer) : l'app affiche tes envois réels + quelques
+  entrées *Demo*.
+* La passkey n'exige pas l'empreinte digitale dans la démo (émulateur) ; sur un vrai téléphone on
+  activerait `setUserAuthenticationRequired(true)`.

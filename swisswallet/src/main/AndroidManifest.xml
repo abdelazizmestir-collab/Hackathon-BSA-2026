@@ -8,6 +8,13 @@
         android:name="com.example.swisswallet.permission.PROVISION_WALLET"
         android:protectionLevel="signature" />
 
+    <!-- Swissquote's guardian: only apps signed with our key may ask it to approve a recovery.
+         Declared here too so install order doesn't matter. -->
+    <permission
+        android:name="com.example.swissquote.permission.GUARDIAN"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.example.swissquote.permission.GUARDIAN" />
+
     <queries>
         <package android:name="com.example.swissquote" />
         <intent>

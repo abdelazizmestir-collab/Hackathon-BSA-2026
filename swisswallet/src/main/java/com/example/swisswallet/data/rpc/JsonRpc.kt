@@ -24,7 +24,7 @@ class RpcException(val code: Int, message: String, val data: String? = null) : I
 
 /**
  * Generic JSON-RPC 2.0 client on OkHttp (cancellable coroutines).
- * Used for both the Sepolia node and the Pimlico bundler/paymaster endpoint.
+ * Used for both the blockchain node and the Pimlico bundler/paymaster endpoint.
  */
 class JsonRpcClient(
     private val endpoint: () -> String,

@@ -1,0 +1,6 @@
+node_modules/
+build/e2e/
+build/*.json
+!build/deployment.json
+!build/vectors.json
+kotlin-harness/harness.jar

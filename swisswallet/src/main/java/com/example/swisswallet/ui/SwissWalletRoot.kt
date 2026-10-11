@@ -29,6 +29,12 @@ import com.example.swisswallet.ui.home.HomeViewModel
 import com.example.swisswallet.ui.profile.ProfileScreen
 import com.example.swisswallet.ui.profile.ProfileViewModel
 import com.example.swisswallet.ui.receive.ReceiveScreen
+import com.example.swisswallet.ui.recovery.GuardianModeScreen
+import com.example.swisswallet.ui.recovery.GuardianModeViewModel
+import com.example.swisswallet.ui.recovery.GuardiansScreen
+import com.example.swisswallet.ui.recovery.GuardiansViewModel
+import com.example.swisswallet.ui.recovery.RecoverScreen
+import com.example.swisswallet.ui.recovery.RecoverViewModel
 import com.example.swisswallet.ui.receive.ReceiveViewModel
 import com.example.swisswallet.ui.send.SendScreen
 import com.example.swisswallet.ui.send.SendViewModel
@@ -48,6 +54,9 @@ object Routes {
     const val PROFILE = "profile"
     const val SEND = "send?token={token}"
     const val RECEIVE = "receive"
+    const val GUARDIANS = "guardians"
+    const val GUARDIAN_MODE = "guardian_mode"
+    const val RECOVER = "recover"
     fun send(token: String = "ETH") = "send?token=$token"
 }
 
@@ -102,9 +111,12 @@ fun SwissWalletRoot(container: AppContainer, onLock: () -> Unit) {
             }
             composable(Routes.NO_WALLET) {
                 val vm: SplashViewModel = viewModel(factory = SplashViewModel.factory(container))
-                NoWalletScreen(vm, onWalletReady = {
-                    nav.navigate(Routes.HOME) { popUpTo(Routes.NO_WALLET) { inclusive = true } }
-                })
+                NoWalletScreen(
+                    vm,
+                    onWalletReady = { nav.navigate(Routes.HOME) { popUpTo(Routes.NO_WALLET) { inclusive = true } } },
+                    onRecover = { nav.navigate(Routes.RECOVER) },
+                    onGuardianMode = { nav.navigate(Routes.GUARDIAN_MODE) },
+                )
             }
             composable(Routes.HOME) {
                 val vm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
@@ -133,7 +145,17 @@ fun SwissWalletRoot(container: AppContainer, onLock: () -> Unit) {
             }
             composable(Routes.PROFILE) {
                 val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.factory(container))
-                ProfileScreen(vm, showMessage = showMessage, onLock = onLock)
+                ProfileScreen(
+                    vm,
+                    showMessage = showMessage,
+                    onLock = onLock,
+                    onGuardians = { nav.navigate(Routes.GUARDIANS) },
+                    onGuardianMode = { nav.navigate(Routes.GUARDIAN_MODE) },
+                    onWalletWiped = {
+                        showMessage("Passkey deleted. Recover your wallet with your guardians.")
+                        nav.navigate(Routes.NO_WALLET) { popUpTo(nav.graph.id) { inclusive = true } }
+                    },
+                )
             }
             composable(
                 Routes.SEND,
@@ -148,6 +170,26 @@ fun SwissWalletRoot(container: AppContainer, onLock: () -> Unit) {
                         nav.popBackStack()
                         nav.navigateTab(Routes.HISTORY)
                     },
+                )
+            }
+            composable(Routes.GUARDIANS) {
+                val vm: GuardiansViewModel = viewModel(factory = GuardiansViewModel.factory(container))
+                GuardiansScreen(vm, onBack = { nav.popBackStack() }, onGuardianMode = { nav.navigate(Routes.GUARDIAN_MODE) }, showMessage = showMessage)
+            }
+            composable(Routes.GUARDIAN_MODE) {
+                val vm: GuardianModeViewModel = viewModel(factory = GuardianModeViewModel.factory(container))
+                GuardianModeScreen(vm, onBack = { nav.popBackStack() }, showMessage = showMessage)
+            }
+            composable(Routes.RECOVER) {
+                val vm: RecoverViewModel = viewModel(factory = RecoverViewModel.factory(container))
+                RecoverScreen(
+                    vm,
+                    onBack = { nav.popBackStack() },
+                    onRecovered = {
+                        showMessage("Wallet recovered ✓ This phone controls it again.")
+                        nav.navigate(Routes.HOME) { popUpTo(nav.graph.id) { inclusive = true } }
+                    },
+                    showMessage = showMessage,
                 )
             }
             composable(Routes.RECEIVE) {

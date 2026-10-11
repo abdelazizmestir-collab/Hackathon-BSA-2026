@@ -7,7 +7,8 @@ plugins {
 
 // Secrets live in local.properties (never committed):
 //   PIMLICO_API_KEY=pim_xxx
-//   SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com   (optional)
+//   SWISSWALLET_CHAIN=base-sepolia        (optional: base-sepolia | sepolia, default base-sepolia)
+//   RPC_URL=https://sepolia.base.org       (optional override of the node URL)
 val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -31,11 +32,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "PIMLICO_API_KEY", "\"${secret("PIMLICO_API_KEY")}\"")
-        buildConfigField(
-            "String",
-            "SEPOLIA_RPC_URL",
-            "\"${secret("SEPOLIA_RPC_URL", "https://ethereum-sepolia-rpc.publicnode.com")}\""
-        )
+        buildConfigField("String", "SWISSWALLET_CHAIN", "\"${secret("SWISSWALLET_CHAIN", "base-sepolia")}\"")
+        buildConfigField("String", "RPC_URL", "\"${secret("RPC_URL", secret("SEPOLIA_RPC_URL"))}\"")
     }
 
     buildTypes {

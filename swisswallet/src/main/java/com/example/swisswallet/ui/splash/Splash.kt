@@ -44,6 +44,7 @@ import com.example.core.designsystem.SwissColors
 import com.example.core.designsystem.SwissIcons
 import com.example.core.designsystem.SwissType
 import com.example.core.designsystem.components.SwissButton
+import com.example.core.designsystem.components.SwissButtonStyle
 import com.example.swisswallet.di.AppContainer
 import com.example.swisswallet.domain.repository.WalletRepository
 import kotlinx.coroutines.delay
@@ -130,7 +131,7 @@ fun SplashScreen(viewModel: SplashViewModel, onReady: (hasWallet: Boolean) -> Un
 
 /** Shown when SwissWallet is opened before the wallet was generated in Swissquote. */
 @Composable
-fun NoWalletScreen(viewModel: SplashViewModel, onWalletReady: () -> Unit) {
+fun NoWalletScreen(viewModel: SplashViewModel, onWalletReady: () -> Unit, onRecover: () -> Unit, onGuardianMode: () -> Unit) {
     val hasWallet by viewModel.hasWallet.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(hasWallet) { if (hasWallet == true) onWalletReady() }
@@ -158,6 +159,23 @@ fun NoWalletScreen(viewModel: SplashViewModel, onWalletReady: () -> Unit) {
             },
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = SwissIcons.External,
+        )
+        Spacer(Modifier.height(12.dp))
+        SwissButton(
+            "I lost my phone — recover my wallet",
+            onClick = onRecover,
+            modifier = Modifier.fillMaxWidth(),
+            style = SwissButtonStyle.Dark,
+            leadingIcon = SwissIcons.Shield,
+        )
+        Spacer(Modifier.height(4.dp))
+        SwissButton(
+            "Be a guardian for someone",
+            onClick = onGuardianMode,
+            modifier = Modifier.fillMaxWidth(),
+            style = SwissButtonStyle.Text,
+            leadingIcon = SwissIcons.Users,
+            height = 46.dp,
         )
     }
 }

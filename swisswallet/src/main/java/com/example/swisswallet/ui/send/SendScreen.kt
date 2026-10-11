@@ -331,7 +331,7 @@ private fun ProgressStep(state: SendUiState, onClose: () -> Unit, onOpenHistory:
             title = "Sent!",
             message = "${state.amount} ${state.token.symbol} sent to ${Formats.shortAddress(state.recipient)}. No gas paid.",
         ) {
-            SwissButton("View on Etherscan", { context.openUrl(ChainConfig.txUrl(p.txHash)) }, Modifier.fillMaxWidth(), style = SwissButtonStyle.Outline, trailingIcon = SwissIcons.External)
+            SwissButton("View on block explorer", { context.openUrl(ChainConfig.txUrl(p.txHash)) }, Modifier.fillMaxWidth(), style = SwissButtonStyle.Outline, trailingIcon = SwissIcons.External)
             SwissButton("Done", onClose, Modifier.fillMaxWidth())
         }
 

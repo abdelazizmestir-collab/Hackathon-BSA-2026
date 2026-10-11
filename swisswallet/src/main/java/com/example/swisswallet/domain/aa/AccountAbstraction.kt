@@ -3,47 +3,39 @@ package com.example.swisswallet.domain.aa
 import java.math.BigInteger
 
 /**
- * ERC-4337 UserOperation, **EntryPoint v0.7** "unpacked" format (what bundlers expect over RPC).
+ * ERC-4337 UserOperation, **EntryPoint v0.6** format (the version Coinbase Smart Wallet uses).
  *
- * A UserOperation is a "transaction intent" for a smart account. Instead of being sent by an EOA,
- * it's sent to a *bundler*, who packs many of them into one real transaction calling
- * `EntryPoint.handleOps(...)`.
+ * A UserOperation is a signed "letter of request" from a smart account: the bundler collects many
+ * of them and submits them in one real transaction to the EntryPoint contract.
  */
 data class UserOperation(
     /** The smart account (contract) that executes the call. */
     val sender: String,
     /** Anti-replay nonce managed by the EntryPoint (`getNonce(sender, key)`). */
     val nonce: BigInteger,
-    /** Only for the very first operation: factory that deploys the account (CREATE2). */
-    val factory: String? = null,
-    val factoryData: ByteArray? = null,
-    /** What the account must do: here `execute(to, value, data)`. */
+    /** factory ‖ factoryData — only for the very first operation (deploys the account). */
+    val initCode: ByteArray = ByteArray(0),
+    /** What the account must do, e.g. `execute(to, value, data)`. */
     val callData: ByteArray,
     val callGasLimit: BigInteger = BigInteger.ZERO,
     val verificationGasLimit: BigInteger = BigInteger.ZERO,
     val preVerificationGas: BigInteger = BigInteger.ZERO,
     val maxFeePerGas: BigInteger,
     val maxPriorityFeePerGas: BigInteger,
-    /** Paymaster = the contract that pays the gas instead of the account (Pimlico). */
-    val paymaster: String? = null,
-    val paymasterVerificationGasLimit: BigInteger? = null,
-    val paymasterPostOpGasLimit: BigInteger? = null,
-    val paymasterData: ByteArray? = null,
-    /** Owner's signature over the userOpHash (validated on-chain by the account). */
-    val signature: ByteArray,
+    /** paymaster ‖ its data — set by Pimlico when it agrees to pay the gas. */
+    val paymasterAndData: ByteArray = ByteArray(0),
+    /** Owner signature (Coinbase "SignatureWrapper": owner index + passkey/WebAuthn signature). */
+    val signature: ByteArray = ByteArray(0),
 )
 
 data class GasPrice(val maxFeePerGas: BigInteger, val maxPriorityFeePerGas: BigInteger)
 
-/** What Pimlico's paymaster returns: gas limits + its own signed `paymasterData`. */
+/** What Pimlico's paymaster returns for v0.6: gas limits + its signed `paymasterAndData`. */
 data class SponsorshipData(
     val callGasLimit: BigInteger,
     val verificationGasLimit: BigInteger,
     val preVerificationGas: BigInteger,
-    val paymaster: String,
-    val paymasterVerificationGasLimit: BigInteger,
-    val paymasterPostOpGasLimit: BigInteger,
-    val paymasterData: ByteArray,
+    val paymasterAndData: ByteArray,
 )
 
 data class UserOperationReceipt(
@@ -52,20 +44,33 @@ data class UserOperationReceipt(
     val reason: String?,
 )
 
-/** Signs messages with the owner key (never leaves the device). */
-interface Signer {
-    val address: String
+/** A WebAuthn-style assertion produced by a passkey (what Coinbase Smart Wallet verifies on-chain). */
+class WebAuthnSignature(
+    val authenticatorData: ByteArray,
+    val clientDataJSON: String,
+    val challengeIndex: Int,
+    val typeIndex: Int,
+    val r: BigInteger,
+    val s: BigInteger,
+)
 
-    /** EIP-191 personal_sign over [message] → 65 bytes r ‖ s ‖ v. */
-    fun signMessage(message: ByteArray): ByteArray
+/**
+ * A passkey: a P-256 key pair generated inside the phone's secure hardware (Android Keystore).
+ * The private key can never be exported; we only get its public coordinates (x, y).
+ */
+interface Passkey {
+    val id: String
+    val x: ByteArray
+    val y: ByteArray
+
+    /** Signs [challenge] (e.g. a userOpHash) the WebAuthn way. */
+    fun sign(challenge: ByteArray): WebAuthnSignature
 }
 
-/** Secure storage for the owner key. */
-interface KeyVault {
-    suspend fun hasKey(): Boolean
-    /** Returns the signer, creating a fresh key the first time. */
-    suspend fun getOrCreateSigner(): Signer
-    suspend fun getSigner(): Signer?
+interface PasskeyVault {
+    suspend fun create(id: String): Passkey
+    suspend fun get(id: String): Passkey?
+    suspend fun delete(id: String)
 }
 
 /** Minimal Ethereum JSON-RPC (a normal node, not the bundler). */
@@ -75,19 +80,23 @@ interface EthereumRpc {
     suspend fun getCode(address: String): ByteArray
 }
 
-/** A smart contract account compatible with ERC-4337. */
+/** One call made by the smart account: "call [target] with [value] wei and [data]". */
+class Call(val target: String, val value: BigInteger, val data: ByteArray)
+
+/** An ERC-4337 smart account able to sign its own UserOperations. */
 interface SmartAccount {
     val address: String
-    val owner: Signer
     suspend fun isDeployed(): Boolean
     suspend fun getNonce(): BigInteger
-    /** (factory, factoryData) used to deploy the account on its first UserOperation. */
-    fun factoryArgs(): Pair<String, ByteArray>
+    /** factory ‖ createAccount(...) — used only while the account isn't deployed. */
+    fun initCode(): ByteArray
     /** callData for "call [to] with [value] wei and [data]". */
     fun encodeExecute(to: String, value: BigInteger, data: ByteArray): ByteArray
-    /** Well-formed fake signature used during gas estimation. */
+    /** callData for several calls executed atomically. */
+    fun encodeExecuteBatch(calls: List<Call>): ByteArray
+    /** Well-formed signature used during gas estimation (same size & code path as a real one). */
     fun stubSignature(): ByteArray
-    fun signUserOperation(userOp: UserOperation, entryPoint: String, chainId: Long): ByteArray
+    fun signUserOperation(userOp: UserOperation): ByteArray
 }
 
 /** Bundler (ERC-4337 mempool). */

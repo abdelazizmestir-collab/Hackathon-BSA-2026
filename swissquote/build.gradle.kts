@@ -33,6 +33,21 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            // web3j / bouncycastle (via :core) ship duplicate META-INF entries
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "META-INF/FastDoubleParser-*",
+                "META-INF/DISCLAIMER",
+                "META-INF/INDEX.LIST",
+                "META-INF/io.netty.versions.properties"
+            )
+        }
+    }
 }
 
 dependencies {

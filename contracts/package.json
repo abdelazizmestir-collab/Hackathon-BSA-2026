@@ -1,0 +1,23 @@
+{
+  "name": "swiss-recovery-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SwissRecoveryModule (3-of-4 social recovery for Coinbase Smart Wallet) + tests",
+  "scripts": {
+    "compile": "node compile.js",
+    "test": "node compile.js && node test.js",
+    "vectors": "node vectors.cjs",
+    "e2e": "node compile-e2e.js && node e2e.cjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@account-abstraction/contracts": "0.6.0",
+    "@openzeppelin/contracts": "5.1.0",
+    "ethers": "6.13.4",
+    "ganache": "7.9.2",
+    "oz4": "npm:@openzeppelin/contracts@4.9.6",
+    "solady": "0.0.200",
+    "solc": "0.8.24",
+    "viem": "2.21.0"
+  }
+}

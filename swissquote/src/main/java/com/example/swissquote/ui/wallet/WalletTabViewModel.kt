@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.core.contract.ProvisionResult
 import com.example.swissquote.di.AppContainer
 import com.example.swissquote.domain.repository.SessionRepository
+import com.example.swissquote.domain.repository.SwissquoteGuardian
 import com.example.swissquote.domain.repository.WalletAppLauncher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -35,12 +36,13 @@ sealed interface WalletTabUiState {
 
 sealed interface WalletTabEvent {
     /** Screen must start SwissWallet's provisioning activity (needs an Activity launcher). */
-    data object LaunchProvisioning : WalletTabEvent
+    data class LaunchProvisioning(val swissquoteGuardian: String) : WalletTabEvent
 }
 
 class WalletTabViewModel(
     private val sessionRepository: SessionRepository,
     private val launcher: WalletAppLauncher,
+    private val guardian: SwissquoteGuardian,
 ) : ViewModel() {
 
     private val generatingSteps = MutableStateFlow<Int?>(null)
@@ -74,7 +76,14 @@ class WalletTabViewModel(
             delay(700); generatingSteps.value = 1
             delay(700); generatingSteps.value = 2
         }
-        _events.trySend(WalletTabEvent.LaunchProvisioning)
+        viewModelScope.launch {
+            // Swissquote's guardian key (one per client) → its address goes into the new wallet's recovery setup.
+            val guardianAddress = runCatching { guardian.address() }.getOrElse {
+                fail("Couldn't prepare Swissquote's guardian key: ${it.message}")
+                return@launch
+            }
+            _events.send(WalletTabEvent.LaunchProvisioning(guardianAddress))
+        }
     }
 
     fun onProvisionResult(result: ProvisionResult) {
@@ -101,7 +110,7 @@ class WalletTabViewModel(
 
     companion object {
         fun factory(c: AppContainer) = viewModelFactory {
-            initializer { WalletTabViewModel(c.sessionRepository, c.walletAppLauncher) }
+            initializer { WalletTabViewModel(c.sessionRepository, c.walletAppLauncher, c.swissquoteGuardian) }
         }
     }
 }
