@@ -38,10 +38,9 @@ key to the fingerprint in hardware and to enforce limits in the wallet
 contract or with a second signer.
 
 **How does a large payment differ from a small one?**
-State what the build on stage does. With the safeguards branch: device
-authentication for every payment, plus an extra confirmation after a pause for
-a large amount, a daily total, or a new recipient. Without it: no difference
-yet, and we say that.
+Device authentication for every payment, plus an extra confirmation after a
+pause for a large amount (1,000 USDC / 0.25 ETH), a 24-hour total (2,000 USDC /
+0.5 ETH), or a new recipient. These are app rules, not wallet-contract rules.
 
 **What stops an attacker with the phone and the email from recovering?**
 Email and SMS play no part. The attacker needs three guardian signatures:

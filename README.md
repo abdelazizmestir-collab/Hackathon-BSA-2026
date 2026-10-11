@@ -134,7 +134,7 @@ your old phone is still in your hands (= it's an attack), **Profile → Guardian
 | `contracts/` → `npm run e2e` | **End to end with the REAL Coinbase Smart Wallet + EntryPoint v0.6**, every calldata / hash / passkey signature produced by **the app's Kotlin code**: deploy + transfer signed by passkey → executeBatch deploys the module + 3-of-4 setup → attack cancelled by the owner → recovery via helper account → finalize refused before 30 s → after 30 s new passkey controls the same wallet, old one rejected. (Needs `kotlinc` for `kotlin-harness/build.sh`.) |
 | `./gradlew :swisswallet:testDebugUnitTest` | Kotlin encodings byte-for-byte equal to **viem** (createAccount, execute, executeBatch, setupGuardians, initiateRecovery, SignatureWrapper, WebAuthnAuth, userOpHash v0.6, recoveryHash) + WebAuthn assertion verifies. |
 
-## Payment safeguards (branch `feat/payment-safeguards`)
+## Payment safeguards
 
 Applied by the app before a payment is signed (`security/`):
 

@@ -73,9 +73,12 @@ whose gas is paid by a paymaster, including wallet deployment and recovery.
 Swissquote pays, as a retention cost.
 
 **Compliant interaction.** Partial. The review screen shows recipient and
-amount before signing. The blocked-address check, payment limits and device
-authentication are on the branch `feat/payment-safeguards`; transaction
-simulation and the richer checks were built in the earlier web prototype.
+amount before signing, then the app applies its payment safeguards: a
+blocked-address check (demo list), device authentication (fingerprint, face or
+screen lock) before every payment, and a second confirmation after a pause for a
+large payment, a daily total or a new recipient. These are app-level, not
+enforced by the wallet contract. Transaction simulation and the richer checks
+were built in the earlier web prototype.
 
 ## 6. AI tools
 
@@ -148,5 +151,5 @@ Remove this section when each line is done.
 
 - [ ] Add the transaction links of the run shown on stage, if different from section 8.
 - [ ] Teammates add any other AI tool to section 6.
-- [ ] Update section 5 if the safeguards branch is merged.
+- [x] Update section 5 if the safeguards branch is merged.
 - [ ] Optional: also verify the recovery contract on Basescan (single file, solc 0.8.24, optimizer 200 runs, EVM paris). Sourcify's automatic hand-over to Basescan was refused for rate limits.

@@ -46,8 +46,8 @@ for a key holder.
 
 - Swissquote's identity check and its guardian key in the app are simulated;
   in production the key is on a bank server.
-- Device authentication before signing and payment limits: say whether the
-  build on stage includes them (branch `feat/payment-safeguards`).
+- Device authentication before signing and payment limits are in `main`: set a
+  screen lock on the demo phone, otherwise the system prompt is skipped.
 
 ## If something fails on stage
 

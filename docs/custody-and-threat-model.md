@@ -68,17 +68,18 @@ it cannot check that the guardians judged correctly.
 
 ## Authentication
 
-**In `main` today:** the device key signs without asking for a fingerprint or
-screen lock (left off so the emulator works), and there is no payment limit.
-
-**On the branch `feat/payment-safeguards`** (merged only once tested on a
-device):
+**In `main`** (payment safeguards merged after testing on the emulator), before
+a payment is signed the app applies:
 
 - device authentication (fingerprint, face or screen lock) before every payment;
 - an additional explicit confirmation, after a short pause, for a payment above
   a threshold, a payment that takes the day's total above a daily limit, or a
   first payment to a new recipient;
 - a blocked-address check before anything is signed (demo list).
+
+On a phone with no screen lock (a fresh emulator) the payment goes through
+without the system prompt and the review screen says so: set a screen lock on
+the demo phone.
 
 Limit either way: these rules are enforced by the app, not by the wallet
 contract, and the key itself is not hardware-bound to biometrics.
