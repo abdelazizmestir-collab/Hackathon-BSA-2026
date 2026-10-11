@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Swissquote Approve</title>
+<style>
+  :root { --bg:#0B0B0D; --card:#1C1C20; --high:#2A2A30; --text:#FFFFFF; --dim:#9B9BA3; --soft:#D9D9DE;
+          --orange:#F25C2A; --green:#16B364; --red:#F04438; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         padding: calc(env(safe-area-inset-top,0px) + 24px) 20px calc(env(safe-area-inset-bottom,0px) + 24px); min-height:100vh; }
+  main { max-width: 420px; margin: 0 auto; display:flex; flex-direction:column; gap:16px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; }
+  .mark { width:34px; height:34px; border-radius:10px; background:var(--orange); display:grid; place-items:center; }
+  h1 { font-size: 26px; line-height:1.15; margin: 8px 0 0; letter-spacing:-0.01em; }
+  .card { background:var(--card); border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:8px; }
+  .row { display:flex; justify-content:space-between; gap:12px; }
+  .row span:first-child { color:var(--dim); }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; word-break: break-all; text-align:right; }
+  button { appearance:none; border:0; border-radius:14px; padding:16px; font:600 17px inherit; font-family:inherit; cursor:pointer;
+           background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; gap:10px; width:100%; }
+  button.secondary { background:var(--high); }
+  button:disabled { opacity:.5; }
+  .code { font: 800 46px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.18em; text-align:center; padding: 10px 0 4px; font-variant-numeric: tabular-nums; }
+  .ok { color:var(--green); font-weight:600; text-align:center; }
+  .err { color:var(--red); }
+  .note { color:var(--dim); font-size:13px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span>Swissquote · Approve</div>
+
+  <section id="none" hidden>
+    <h1>Scan a code first</h1>
+    <p class="note">Open this page by scanning the QR code shown by the Swissquote or SwissWallet app.</p>
+  </section>
+
+  <section id="ask" hidden>
+    <h1 id="title">Approve</h1>
+    <div class="card" id="details"></div>
+    <button id="go"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1M15 9v1M12 9v3.5h-1M9.5 15.5a3.5 3.5 0 0 0 5 0"/></svg>Confirm with Face ID</button>
+    <p class="err" id="error" hidden></p>
+    <button class="secondary" id="reset" hidden>Set up Face ID on this phone again</button>
+    <p class="note" id="setupNote" hidden>First time on this phone: it creates a passkey for this page, protected by Face ID (or your fingerprint / screen lock).</p>
+  </section>
+
+  <section id="done" hidden>
+    <h1>Type this code in the app</h1>
+    <div class="card"><div class="code" id="code">000000</div><div class="ok">Face ID confirmed</div></div>
+    <p class="note" id="doneNote"></p>
+  </section>
+
+  <p class="note">Simulated second factor for the hackathon demo: no server is involved, and the code is computed from the session in the QR code. In production this is the bank's authenticator app, which checks the signature on its servers.</p>
+</main>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const p = new URLSearchParams(location.hash.slice(1));
+  const action = p.get("a"), session = p.get("s") || "";
+  const amt = p.get("amt") || "", sym = (p.get("sym") || "").toUpperCase(), to = p.get("to") || "";
+  const KEY = "sq-approve-credential";
+  const valid = /^[0-9a-f]{16}$/.test(session) && (action === "login" || (action === "pay" && amt && sym && /^0x[0-9a-fA-F]{40}$/.test(to)));
+  if (!valid) { $("none").hidden = false; return; }
+
+  // What is approved, shown before Face ID.
+  const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  if (action === "login") {
+    $("title").textContent = "Log in to Swissquote";
+    $("details").innerHTML = '<div class="row"><span>Device</span><span>New login request</span></div><div class="row"><span>Session</span><span class="mono">' + session + "</span></div>";
+  } else {
+    $("title").textContent = "Approve this payment";
+    $("details").innerHTML = '<div class="row"><span>Amount</span><span><b>' + esc(amt) + " " + esc(sym) + '</b></span></div><div class="row"><span>To</span><span class="mono">' + esc(to) + '</span></div><div class="row"><span>Network fee</span><span>0 (sponsored)</span></div>';
+  }
+  $("ask").hidden = false;
+  let stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  $("setupNote").hidden = !!stored;
+
+  // Same derivation as the Android apps (core/auth/PhoneApproval.kt).
+  async function code(input) {
+    const d = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input)));
+    const n = ((d[0] * 16777216) + (d[1] << 16) + (d[2] << 8) + d[3]) >>> 0;
+    return String(n % 1000000).padStart(6, "0");
+  }
+  const input = action === "login" ? "swissquote-demo-login:" + session
+    : "swisswallet-pay:" + session + ":" + amt + ":" + sym + ":" + to.trim().toLowerCase();
+
+  const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
+  const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  // User Verified flag (bit 2 of the flags byte, right after the 32-byte rpIdHash).
+  const userVerified = (authData) => authData && new Uint8Array(authData)[32] & 0x04;
+
+  async function create() {
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge: rnd(32),
+      rp: { name: "Swissquote Approve (demo)", id: location.hostname },
+      user: { id: rnd(16), name: "swissquote-demo", displayName: "Swissquote demo client" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" },
+      timeout: 60000,
+    } });
+    const ad = cred.response.getAuthenticatorData ? cred.response.getAuthenticatorData() : null;
+    if (ad && !userVerified(ad)) throw new Error("Face ID was not used.");
+    try { localStorage.setItem(KEY, b64u(cred.rawId)); } catch (e) {}
+  }
+  async function get(id) {
+    const cred = await navigator.credentials.get({ publicKey: {
+      challenge: rnd(32), rpId: location.hostname, userVerification: "required", timeout: 60000,
+      allowCredentials: [{ type: "public-key", id: unb64u(id), transports: ["internal", "hybrid"] }],
+    } });
+    if (!userVerified(cred.response.authenticatorData)) throw new Error("Face ID was not used.");
+  }
+
+  async function approve(forceSetup) {
+    $("error").hidden = true; $("go").disabled = true;
+    try {
+      if (!window.PublicKeyCredential) throw new Error("This browser can't use Face ID. Open the link in Safari or Chrome.");
+      let id = null; try { id = forceSetup ? null : localStorage.getItem(KEY); } catch (e) {}
+      if (id) await get(id); else await create();
+      $("code").textContent = await code(input);
+      $("doneNote").textContent = action === "login" ? "The code is only valid for this login session." : "The code only approves " + amt + " " + sym + " to this address.";
+      $("ask").hidden = true; $("done").hidden = false;
+    } catch (e) {
+      $("error").textContent = e && e.name === "NotAllowedError" ? "Face ID was cancelled or didn't match. Try again." : (e && e.message) || "Face ID failed.";
+      $("error").hidden = false;
+      $("reset").hidden = false;
+    } finally { $("go").disabled = false; }
+  }
+  $("go").addEventListener("click", () => approve(false));
+  $("reset").addEventListener("click", () => approve(true));
+})();
+</script>
+</body>
+</html>

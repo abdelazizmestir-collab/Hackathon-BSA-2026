@@ -69,6 +69,8 @@ import com.example.core.designsystem.components.SwissCard
 import com.example.swisswallet.config.ChainConfig
 import com.example.swisswallet.domain.model.SendProgress
 import com.example.swisswallet.domain.model.Tokens
+import com.example.core.auth.PhoneApproval
+import com.example.core.auth.PhoneApprovalDialog
 import com.example.swisswallet.security.AuthOutcome
 import com.example.swisswallet.security.DeviceAuth
 import com.example.swisswallet.ui.components.FlowTopBar
@@ -277,11 +279,14 @@ private fun ReviewStep(state: SendUiState, onConfirm: () -> Unit) {
     val activity = LocalContext.current.findActivity()
     val authAvailable = activity != null && DeviceAuth.isAvailable(activity)
     var askExtraConfirmation by remember { mutableStateOf(false) }
+    var askPhoneApproval by remember { mutableStateOf(false) }
 
-    // Every payment: the phone authenticates its user before anything is signed.
+    // Every payment: the client proves who they are before anything is signed.
+    // Phone with a screen lock: the system prompt (fingerprint, face or PIN).
+    // Otherwise (e.g. the emulator): scan a QR code and confirm with Face ID on your own phone.
     val authenticateThenSend: () -> Unit = {
-        if (activity == null) {
-            onConfirm()
+        if (activity == null || !authAvailable) {
+            askPhoneApproval = true
         } else {
             DeviceAuth.confirm(
                 activity,
@@ -309,6 +314,22 @@ private fun ReviewStep(state: SendUiState, onConfirm: () -> Unit) {
                 authenticateThenSend()
             },
             onDismiss = { askExtraConfirmation = false },
+        )
+    }
+
+    if (askPhoneApproval) {
+        val session = remember { PhoneApproval.newSession() }
+        PhoneApprovalDialog(
+            title = "Confirm with Face ID",
+            detail = "${state.amount} ${state.token.symbol} to ${Formats.shortAddress(state.recipient, 8, 6)}",
+            url = PhoneApproval.paymentUrl(session, state.amount, state.token.symbol, state.recipient),
+            expectedCode = PhoneApproval.paymentCode(session, state.amount, state.token.symbol, state.recipient),
+            confirmLabel = "Confirm & send",
+            onSuccess = {
+                askPhoneApproval = false
+                onConfirm()
+            },
+            onDismiss = { askPhoneApproval = false },
         )
     }
 
@@ -343,7 +364,7 @@ private fun ReviewStep(state: SendUiState, onConfirm: () -> Unit) {
             }
             Text(
                 if (authAvailable) "You will confirm with your fingerprint, face or screen lock."
-                else "No screen lock on this phone: set one so payments ask for it.",
+                else "You will confirm with Face ID on your phone (scan a QR code).",
                 style = SwissType.Caption, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp),
             )
         }

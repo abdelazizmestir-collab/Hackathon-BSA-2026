@@ -84,9 +84,16 @@ a payment is signed the app applies:
   first payment to a new recipient;
 - a blocked-address check before anything is signed (demo list).
 
-On a phone with no screen lock (a fresh emulator) the payment goes through
-without the system prompt and the review screen says so: set a screen lock on
-the demo phone.
+On a phone with no screen lock (a fresh emulator) the app instead shows a QR
+code: the client scans it with their own phone, confirms with **Face ID** there,
+and types the 6-digit code it shows. The code is derived from the session, the
+amount and the recipient, so it approves only that payment. Login to the
+Swissquote app uses the same QR + Face ID step.
+
+The approval page (`docs/approve/`, published with GitHub Pages) uses a passkey
+with user verification, so the browser asks for Face ID (fingerprint or screen
+lock on Android). It is a **simulated** second factor: no server checks the
+signature; in production this is the bank's authenticator app.
 
 Limit either way: these rules are enforced by the app, not by the wallet
 contract, and the key itself is not hardware-bound to biometrics.

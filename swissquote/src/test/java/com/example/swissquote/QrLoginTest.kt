@@ -8,7 +8,7 @@ import org.junit.Test
 
 class QrLoginTest {
 
-    /** The page computes 590312 for this session; the app must agree or no login can succeed. */
+    /** The approval page computes 590312 for this session; the app must agree or no login can succeed. */
     @Test
     fun codeMatchesTheHostedPage() {
         assertEquals("590312", QrLogin.expectedCode("0123456789abcdef"))
@@ -25,6 +25,6 @@ class QrLoginTest {
 
     @Test
     fun sessionTravelsInTheUrlFragment() {
-        assertEquals("https://wallet-login-code-demo.vercel.app/#s=abc", QrLogin.loginUrl("abc"))
+        assertEquals("https://abdelazizmestir-collab.github.io/Hackathon-BSA-2026/approve/#a=login&s=abc", QrLogin.loginUrl("abc"))
     }
 }

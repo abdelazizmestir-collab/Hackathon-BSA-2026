@@ -14,7 +14,10 @@ Rehearse it twice and record one full run as the backup video.
       contract is already deployed.
 - [ ] Check that copy and paste of codes works between the devices. On one
       emulator Android Studio reported the clipboard as unavailable.
-- [ ] A real phone with a camera and internet, for the login QR code.
+- [ ] A real phone with a camera, internet and Face ID (or a fingerprint), for
+      the QR codes of the login and of each payment. GitHub Pages must be on
+      (Settings → Pages → branch `main`, folder `/docs`) so the approval page
+      is online.
 - [ ] Explorer tab open on the wallet address. Backup video on the laptop.
 
 **Do not use "Approve with simulated guardians" in front of the judges.** Those
@@ -25,8 +28,9 @@ for a key holder.
 
 1. **Problem (15 s).** "Today, self-custody means leaving Swissquote."
 2. **Log in (15 s).** In the Swissquote app: *Login*. A QR code appears. Scan it
-   with a real phone, read the 6-digit code the phone shows, type it in. The
-   client is now logged in with a second device.
+   with a real phone, confirm with Face ID there, and type the 6-digit code it
+   shows. The client is now logged in with a second device. (Payments in
+   SwissWallet ask for the same QR + Face ID step on an emulator.)
 3. **Create (20 s).** Wallet tab, *Generate my wallet*.
    The key is created in the phone's secure chip. No seed phrase. Swissquote
    becomes guardian #1 automatically.

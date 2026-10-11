@@ -38,5 +38,7 @@ dependencies {
     // Shared crypto (keccak / secp256k1) + storage for guardian keys, used by both apps.
     api(libs.androidx.datastore.preferences)
     api(libs.web3j.crypto)
+    // QR codes (approval with Face ID on the client's phone, receive address)
+    api(libs.zxing.core)
     debugApi(libs.androidx.compose.ui.tooling)
 }
