@@ -31,6 +31,8 @@ import com.example.swisswallet.domain.repository.SettingsRepository
 import com.example.swisswallet.domain.repository.TransactionRepository
 import com.example.swisswallet.domain.repository.TransferService
 import com.example.swisswallet.domain.repository.WalletRepository
+import com.example.swisswallet.security.LocalPaymentSafeguards
+import com.example.swisswallet.security.PaymentSafeguards
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -69,6 +71,9 @@ class AppContainer(context: Context) {
     val portfolioRepository: PortfolioRepository = DefaultPortfolioRepository(ethereumRpc, priceRepository)
     val transactionRepository: TransactionRepository = DataStoreTransactionRepository(store, bundler)
     val settingsRepository: SettingsRepository = DataStoreSettingsRepository(store)
+
+    /** Blocked list, payment limits and the new-recipient rule applied before a payment is signed. */
+    val paymentSafeguards: PaymentSafeguards = LocalPaymentSafeguards(context)
 
     val transferService: TransferService = AaTransferService(
         wallet = walletRepository,

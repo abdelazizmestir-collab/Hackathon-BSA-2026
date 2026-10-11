@@ -14,6 +14,7 @@ import com.example.swisswallet.domain.model.TransferRequest
 import com.example.swisswallet.domain.repository.PortfolioRepository
 import com.example.swisswallet.domain.repository.TransferService
 import com.example.swisswallet.domain.repository.WalletRepository
+import com.example.swisswallet.security.PaymentSafeguards
 import com.example.swisswallet.util.AddressValidator
 import com.example.swisswallet.util.AmountParser
 import kotlinx.coroutines.CancellationException
@@ -42,6 +43,8 @@ data class SendUiState(
     val amountError: String? = null,
     /** Validated values, set when moving to Review. */
     val amountRaw: BigInteger? = null,
+    /** Why this payment needs the extra confirmation (large, over the daily total, new recipient). */
+    val safeguardReasons: List<String> = emptyList(),
     val progress: SendProgress? = null,
 ) {
     val selectedBalance: TokenBalance? get() = balances.firstOrNull { it.token.symbol == token.symbol }
@@ -68,6 +71,7 @@ class SendViewModel(
     private val wallet: WalletRepository,
     private val portfolios: PortfolioRepository,
     private val transfers: TransferService,
+    private val safeguards: PaymentSafeguards,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SendUiState(token = initialToken))
@@ -108,14 +112,20 @@ class SendViewModel(
     fun onReview() {
         val s = _state.value
         val recipientError = AddressValidator.validate(s.recipient, s.fromAddress)
+            ?: if (safeguards.isBlocked(s.recipient)) BLOCKED_RECIPIENT else null
         val parsed = AmountParser.parse(s.amount, s.token.decimals, s.selectedBalance?.raw)
         val amountError = (parsed as? AmountParser.Result.Error)?.message
-        val raw = (parsed as? AmountParser.Result.Ok)?.raw
+        val ok = parsed as? AmountParser.Result.Ok
+        val raw = ok?.raw
+        val reasons =
+            if (recipientError == null && ok != null) safeguards.reasons(s.token.symbol, ok.value, s.recipient)
+            else emptyList()
         _state.update {
             it.copy(
                 recipientError = recipientError,
                 amountError = amountError,
                 amountRaw = raw,
+                safeguardReasons = reasons,
                 step = if (recipientError == null && raw != null) SendStep.Review else SendStep.Form,
             )
         }
@@ -131,7 +141,12 @@ class SendViewModel(
         val request = TransferRequest(token = s.token, to = s.recipient, amountRaw = raw)
         _state.update { it.copy(step = SendStep.Progress, progress = SendProgress.Preparing) }
         sendJob = viewModelScope.launch {
-            transfers.send(request).collect { p -> _state.update { it.copy(progress = p) } }
+            transfers.send(request).collect { p ->
+                if (p is SendProgress.Confirmed) {
+                    safeguards.recordSent(s.token.symbol, BigDecimal(raw).movePointLeft(s.token.decimals), s.recipient)
+                }
+                _state.update { it.copy(progress = p) }
+            }
         }
     }
 
@@ -142,9 +157,17 @@ class SendViewModel(
     }
 
     companion object {
+        private const val BLOCKED_RECIPIENT = "This address is on the blocked list (demo sanctions list). Nothing was signed."
+
         fun factory(c: AppContainer, tokenSymbol: String) = viewModelFactory {
             initializer {
-                SendViewModel(Tokens.bySymbol(tokenSymbol), c.walletRepository, c.portfolioRepository, c.transferService)
+                SendViewModel(
+                    Tokens.bySymbol(tokenSymbol),
+                    c.walletRepository,
+                    c.portfolioRepository,
+                    c.transferService,
+                    c.paymentSafeguards,
+                )
             }
         }
     }
