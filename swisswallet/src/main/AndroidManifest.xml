@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Only apps signed with the same key (i.e. our Swissquote app) may ask us to provision a wallet. -->
+    <permission
+        android:name="com.example.swisswallet.permission.PROVISION_WALLET"
+        android:protectionLevel="signature" />
+
+    <queries>
+        <package android:name="com.example.swissquote" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".SwissWalletApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SwissWallet">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.SwissWallet"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Invisible activity called by Swissquote ("Generate my wallet"). -->
+        <activity
+            android:name=".ProvisionActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density"
+            android:permission="com.example.swisswallet.permission.PROVISION_WALLET"
+            android:theme="@style/Theme.SwissWallet.Transparent">
+            <intent-filter>
+                <action android:name="com.example.swisswallet.action.PROVISION_WALLET" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

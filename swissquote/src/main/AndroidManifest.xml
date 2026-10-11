@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Same signature-level permission is declared by SwissWallet; declaring it here too
+         means install order doesn't matter (both apps are signed with the same key). -->
+    <permission
+        android:name="com.example.swisswallet.permission.PROVISION_WALLET"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.example.swisswallet.permission.PROVISION_WALLET" />
+
+    <!-- Android 11+ package visibility: we need to see / launch SwissWallet. -->
+    <queries>
+        <package android:name="com.example.swisswallet" />
+    </queries>
+
+    <application
+        android:name=".SwissquoteApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Swissquote">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Swissquote"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

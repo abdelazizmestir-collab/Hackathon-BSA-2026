@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder brand mark (orange disc + bars). Replace with the official logo if you have the rights. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFF25C2A"
+        android:pathData="M30,54a24,24 0 1,0 48,0a24,24 0 1,0 -48,0z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="4" android:strokeLineCap="round"
+        android:pathData="M44,64V52M54,64V44M64,64V56" />
+</vector>
