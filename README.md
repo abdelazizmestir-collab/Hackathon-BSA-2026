@@ -134,6 +134,20 @@ your old phone is still in your hands (= it's an attack), **Profile → Guardian
 | `contracts/` → `npm run e2e` | **End to end with the REAL Coinbase Smart Wallet + EntryPoint v0.6**, every calldata / hash / passkey signature produced by **the app's Kotlin code**: deploy + transfer signed by passkey → executeBatch deploys the module + 3-of-4 setup → attack cancelled by the owner → recovery via helper account → finalize refused before 30 s → after 30 s new passkey controls the same wallet, old one rejected. (Needs `kotlinc` for `kotlin-harness/build.sh`.) |
 | `./gradlew :swisswallet:testDebugUnitTest` | Kotlin encodings byte-for-byte equal to **viem** (createAccount, execute, executeBatch, setupGuardians, initiateRecovery, SignatureWrapper, WebAuthnAuth, userOpHash v0.6, recoveryHash) + WebAuthn assertion verifies. |
 
+## Payment safeguards (branch `feat/payment-safeguards`)
+
+Applied by the app before a payment is signed (`security/`):
+
+| Safeguard | What it does |
+|---|---|
+| **Device authentication** | Every payment asks for the fingerprint, face or screen lock through the system prompt (`DeviceAuth`). On a phone with no screen lock the review screen says so and the payment goes through. |
+| **Blocked addresses** | A recipient on the list is refused at review and nothing is signed. Demo list: `0x000000000000000000000000000000000000dEaD` (`BlockedAddresses`). |
+| **Extra confirmation** | A second, explicit confirmation after a 3-second pause when a payment is high-value (1,000 USDC / 0.25 ETH or more), takes the last 24 hours above a daily total (2,000 USDC / 0.5 ETH), or goes to an address never paid before (`SpendingPolicy`). Many small payments add up to the daily total. |
+
+These bind this app, not the wallet contract, and the key itself is still not hardware-bound to
+biometrics: they stop a person holding the phone, not modified software. Limits enforced on-chain,
+or a second signer, are the production version. Unit tests: `SpendingPolicyTest`.
+
 ## What's real vs simulated
 
 | Real (Base Sepolia blockchain) | Simulated |

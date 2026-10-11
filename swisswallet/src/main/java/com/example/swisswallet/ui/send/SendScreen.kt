@@ -1,5 +1,8 @@
 package com.example.swisswallet.ui.send
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -27,11 +30,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,11 +69,14 @@ import com.example.core.designsystem.components.SwissCard
 import com.example.swisswallet.config.ChainConfig
 import com.example.swisswallet.domain.model.SendProgress
 import com.example.swisswallet.domain.model.Tokens
+import com.example.swisswallet.security.AuthOutcome
+import com.example.swisswallet.security.DeviceAuth
 import com.example.swisswallet.ui.components.FlowTopBar
 import com.example.swisswallet.ui.components.InfoBanner
 import com.example.swisswallet.ui.components.TokenAvatar
 import com.example.swisswallet.util.openUrl
 import com.example.swisswallet.util.readClipboard
+import kotlinx.coroutines.delay
 
 @Composable
 fun SendScreen(
@@ -261,6 +274,44 @@ private fun InputField(
 
 @Composable
 private fun ReviewStep(state: SendUiState, onConfirm: () -> Unit) {
+    val activity = LocalContext.current.findActivity()
+    val authAvailable = activity != null && DeviceAuth.isAvailable(activity)
+    var askExtraConfirmation by remember { mutableStateOf(false) }
+
+    // Every payment: the phone authenticates its user before anything is signed.
+    val authenticateThenSend: () -> Unit = {
+        if (activity == null) {
+            onConfirm()
+        } else {
+            DeviceAuth.confirm(
+                activity,
+                "Confirm payment",
+                "${state.amount} ${state.token.symbol} to ${Formats.shortAddress(state.recipient, 8, 6)}",
+            ) { outcome ->
+                if (outcome != AuthOutcome.Cancelled) onConfirm()
+            }
+        }
+    }
+    // Large, over the daily total, or to a new recipient: stop and confirm a second time first.
+    val onConfirmClick: () -> Unit = {
+        if (state.safeguardReasons.isEmpty()) {
+            authenticateThenSend()
+        } else {
+            askExtraConfirmation = true
+        }
+    }
+
+    if (askExtraConfirmation) {
+        ExtraConfirmationDialog(
+            state = state,
+            onConfirm = {
+                askExtraConfirmation = false
+                authenticateThenSend()
+            },
+            onDismiss = { askExtraConfirmation = false },
+        )
+    }
+
     Column(Modifier.fillMaxSize()) {
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
@@ -284,9 +335,56 @@ private fun ReviewStep(state: SendUiState, onConfirm: () -> Unit) {
                 "Your key signs a UserOperation; a bundler submits it and Pimlico's paymaster pays the gas.",
                 style = SwissType.Caption, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp),
             )
+            if (state.safeguardReasons.isNotEmpty()) {
+                Text(
+                    "Extra confirmation needed: ${state.safeguardReasons.joinToString("; ")}.",
+                    style = SwissType.Caption, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            }
+            Text(
+                if (authAvailable) "You will confirm with your fingerprint, face or screen lock."
+                else "No screen lock on this phone: set one so payments ask for it.",
+                style = SwissType.Caption, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp),
+            )
         }
-        SwissButton("Confirm & send", onConfirm, Modifier.fillMaxWidth().padding(16.dp), leadingIcon = SwissIcons.ArrowUp)
+        SwissButton("Confirm & send", onConfirmClick, Modifier.fillMaxWidth().padding(16.dp), leadingIcon = SwissIcons.ArrowUp)
     }
+}
+
+private const val EXTRA_CONFIRMATION_PAUSE_SECONDS = 3
+
+/** The second confirmation: the reasons, the full recipient, and a short pause before "send". */
+@Composable
+private fun ExtraConfirmationDialog(state: SendUiState, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    var secondsLeft by remember { mutableIntStateOf(EXTRA_CONFIRMATION_PAUSE_SECONDS) }
+    LaunchedEffect(Unit) {
+        while (secondsLeft > 0) {
+            delay(1_000)
+            secondsLeft--
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Check this payment") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                state.safeguardReasons.forEach { reason -> Text("\u2022 $reason") }
+                Text("You are sending ${state.amount} ${state.token.symbol} to ${state.recipient}.")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = secondsLeft == 0) {
+                Text(if (secondsLeft == 0) "Yes, send it" else "Wait $secondsLeft s")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @Composable
