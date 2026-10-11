@@ -62,7 +62,10 @@ it cannot check that the guardians judged correctly.
 
 ## Wallet creation and identity
 
-1. The client is logged in to the Swissquote app (mocked login).
+1. The client logs in to the Swissquote app with a second device: the app shows
+   a QR code, the client scans it with their phone and types the 6-digit code
+   the phone shows. (Simulated: it stands for approval in the bank's mobile
+   authenticator; no server checks it.)
 2. *Generate my wallet*: the Swissquote app calls the wallet app, which creates
    the device key and computes the wallet address. Nothing is on-chain yet.
 3. Swissquote passes its guardian address at the same moment and becomes

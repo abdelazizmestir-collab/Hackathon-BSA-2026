@@ -53,6 +53,7 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.zxing.core) // QR code of the login screen
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

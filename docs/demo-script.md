@@ -14,6 +14,7 @@ Rehearse it twice and record one full run as the backup video.
       contract is already deployed.
 - [ ] Check that copy and paste of codes works between the devices. On one
       emulator Android Studio reported the clipboard as unavailable.
+- [ ] A real phone with a camera and internet, for the login QR code.
 - [ ] Explorer tab open on the wallet address. Backup video on the laptop.
 
 **Do not use "Approve with simulated guardians" in front of the judges.** Those
@@ -23,24 +24,27 @@ for a key holder.
 ## Flow
 
 1. **Problem (15 s).** "Today, self-custody means leaving Swissquote."
-2. **Create (20 s).** In the Swissquote app: Wallet tab, *Generate my wallet*.
+2. **Log in (15 s).** In the Swissquote app: *Login*. A QR code appears. Scan it
+   with a real phone, read the 6-digit code the phone shows, type it in. The
+   client is now logged in with a second device.
+3. **Create (20 s).** Wallet tab, *Generate my wallet*.
    The key is created in the phone's secure chip. No seed phrase. Swissquote
    becomes guardian #1 automatically.
-3. **Send (25 s).** In SwissWallet: Send, address, amount, confirm. Zero gas
+4. **Send (25 s).** In SwissWallet: Send, address, amount, confirm. Zero gas
    paid. Show the transaction on the explorer.
-4. **Guardians (15 s).** Profile, Guardians: Swissquote plus the client's
+5. **Guardians (15 s).** Profile, Guardians: Swissquote plus the client's
    other device, a person close to them and an independent institution. 3 of 4.
-5. **Lose the phone (10 s).** Profile, *Simulate lost phone*: the key is deleted.
-6. **Recover (50 s).** *I lost my phone*, new key, request code. Swissquote
+6. **Lose the phone (10 s).** Profile, *Simulate lost phone*: the key is deleted.
+7. **Recover (50 s).** *I lost my phone*, new key, request code. Swissquote
    runs its identity check and signs. Two guardians sign on their own devices
    and send back their codes. 3 of 3, *Start recovery*, 30 seconds (48 hours in
    production), *Finish recovery*. Same address, same funds, new key.
-7. **During the 30 seconds (in parallel).** Show the who-can-do-what table:
+8. **During the 30 seconds (in parallel).** Show the who-can-do-what table:
    Swissquote alone cannot recover; the client can cancel.
-8. **Swissquote is gone (15 s, say it).** The three client guardians can do
+9. **Swissquote is gone (15 s, say it).** The three client guardians can do
    the same without Swissquote: approvals are signed codes, with no Swissquote
    server involved.
-9. **Close (15 s).** What is real, what is simulated, what Swissquote gains.
+10. **Close (15 s).** What is real, what is simulated, what Swissquote gains.
 
 ## Slides
 

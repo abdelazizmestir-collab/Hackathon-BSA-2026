@@ -19,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +52,18 @@ fun WelcomeScreen(viewModel: WelcomeViewModel, onFinished: () -> Unit) {
 
     LaunchedEffect(viewModel) {
         viewModel.done.collect { onFinished() }
+    }
+
+    // Login goes through a second device first: scan the QR code, type the code the phone shows.
+    var showQrLogin by remember { mutableStateOf(false) }
+    if (showQrLogin) {
+        QrLoginDialog(
+            onSuccess = {
+                showQrLogin = false
+                viewModel.onAction(WelcomeAction.Login)
+            },
+            onDismiss = { showQrLogin = false },
+        )
     }
 
     Column(
@@ -95,7 +110,7 @@ fun WelcomeScreen(viewModel: WelcomeViewModel, onFinished: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         SwissButton(
             text = "Login",
-            onClick = { viewModel.onAction(WelcomeAction.Login) },
+            onClick = { showQrLogin = true },
             style = SwissButtonStyle.Outline,
             loading = state.pending == WelcomeAction.Login,
             enabled = !busy || state.pending == WelcomeAction.Login,
