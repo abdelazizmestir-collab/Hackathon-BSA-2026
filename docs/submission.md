@@ -79,11 +79,18 @@ simulation and the richer checks were built in the earlier web prototype.
 
 ## 6. AI tools
 
-The team worked with **Claude Code** (Anthropic, model Claude Opus 5.5).
-Commits made with it carry a `Co-Authored-By` line. It was used to write and
-review code, to write tests, and to draft and check the documents, including
-the legal sources. People made the design decisions, ran the apps and reviewed
-the results. *Each teammate to confirm, and to add any other tool used.*
+The team worked with **Claude Code** (Anthropic, model Claude Opus 5.5). Every
+commit made with it carries a `Co-Authored-By` line, in this repository and in
+the earlier one, so its share of the work is visible in the history.
+
+| Used for | Checked by people how |
+|---|---|
+| Writing the Android apps, the recovery contract and their tests | Run on an emulator on Base Sepolia; contract tests and the end-to-end test |
+| The submission documents, including looking up and checking the legal sources | Read by the team; each source lists how far it was checked |
+| Reviewing the repository against the brief | Findings recorded in the threat model |
+
+People made the design decisions, ran the apps and reviewed the results.
+*Teammates: add any other tool you used.*
 
 ## 7. Deployment manifest
 
@@ -92,19 +99,46 @@ the results. *Each teammate to confirm, and to add any other tool used.*
 | Chain | Base Sepolia, chain id 84532 |
 | Wallet contract | Coinbase Smart Wallet, factory `0x0BA5ED0c6AA8c49038F819E587E2633c4A9F428a` |
 | EntryPoint | v0.6, `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789` |
-| Recovery contract | `SwissRecoveryModule`, `0xB3786e6BdB300575df7b5b3291E387a6f287428F` (CREATE2), source in `contracts/contracts/` |
+| Recovery contract | `SwissRecoveryModule`, [`0xB3786e6BdB300575df7b5b3291E387a6f287428F`](https://sepolia.basescan.org/address/0xB3786e6BdB300575df7b5b3291E387a6f287428F) (CREATE2). Source verified on [Sourcify](https://repo.sourcify.dev/84532/0xB3786e6BdB300575df7b5b3291E387a6f287428F), exact match with `contracts/contracts/SwissRecoveryModule.sol` |
+| Compiler settings | solc 0.8.24, optimizer on, 200 runs, EVM version paris |
 | Recovery settings | 4 guardians, 3 signatures, waiting period 30 seconds in the demo (48 hours as the production starting point) |
 | USDC | Circle test USDC, `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 | Bundler and paymaster | Pimlico |
-| Demo wallet address and transactions | *To fill from the demo run* |
+| Test wallet | [`0x3038BA5031F2aF20b3240Fa6723D47c2B5950f11`](https://sepolia.basescan.org/address/0x3038BA5031F2aF20b3240Fa6723D47c2B5950f11) (see section 8) |
 
-## 8. Evidence and earlier work
+## 8. Evidence
+
+### A complete recovery on Base Sepolia
+
+From the team's test run on 11 October 2026, wallet
+`0x3038BA5031F2aF20b3240Fa6723D47c2B5950f11`. Times are local (CEST).
+
+| Time | Step | Transaction |
+|---|---|---|
+| 07:26:06 | Protection activated: 4 guardians, 3 approvals, 30 s delay | [`0xd09720e9…`](https://sepolia.basescan.org/tx/0xd09720e9c7a405f8c914913b951a1d3896052c90f6dac0515ee0f71f9ddfa514) |
+| 07:30:14 | Recovery started with 3 guardian signatures | [`0xe5019849…`](https://sepolia.basescan.org/tx/0xe5019849278abb4cb942ed8f665060b1f26aa7043a40c9eca5ea8c9220e0938f) |
+| 07:31:02 | Recovery finished, 48 s later: new key added, lost key removed | [`0x24be11b1…`](https://sepolia.basescan.org/tx/0x24be11b1cc6e7e20061ae8be34eedce787cbcaecc0a42f520a3d528803c73204) |
+| 07:31:44 | The **new** key signs its first operation (guardians set again) | [`0xe04321cf…`](https://sepolia.basescan.org/tx/0xe04321cfb516eea6547077d892ea3ffbb24f54f9266fc110ae326cb97bf2a770) |
+
+Owners of that wallet, read from the chain afterwards:
+
+| Slot | Owner |
+|---|---|
+| #0 | Removed (the lost device key) |
+| #1 | `SwissRecoveryModule` |
+| #2 | The new device key (code `7722-C6F2`) |
+
+Same address before and after. The README states that this run used
+Swissquote plus two simulated guardians on one emulator; the on-chain rules
+exercised are the same with guardians on separate devices.
+
+### Tests and other material
 
 | What | Where |
 |---|---|
 | Contract tests and end-to-end test with the real Coinbase Smart Wallet | `contracts/` (`npm test`, `npm run e2e`) |
 | Kotlin encoding tests | `./gradlew :swisswallet:testDebugUnitTest` |
-| Demo story | [demo-script.md](demo-script.md) |
+| Demo story and pitch notes | [demo-script.md](demo-script.md), [pitch-notes.md](pitch-notes.md) |
 | Judge questions | [judge-qa.md](judge-qa.md) |
 | Earlier web prototype (passkeys, relay, separate guardian services, independent recovery page, sanctions screening, simulation) | Repository `rayenea/swissquote-wallet`, live at https://sq-wallet-hackathon-demo.vercel.app |
 
@@ -112,7 +146,7 @@ the results. *Each teammate to confirm, and to add any other tool used.*
 
 Remove this section when each line is done.
 
-- [ ] Fill the demo wallet address and transaction links (section 7).
-- [ ] Teammates confirm section 6.
+- [ ] Add the transaction links of the run shown on stage, if different from section 8.
+- [ ] Teammates add any other AI tool to section 6.
 - [ ] Update section 5 if the safeguards branch is merged.
-- [ ] Check whether the recovery contract's source is verified on Basescan.
+- [ ] Optional: also verify the recovery contract on Basescan (single file, solc 0.8.24, optimizer 200 runs, EVM paris). Sourcify's automatic hand-over to Basescan was refused for rate limits.
